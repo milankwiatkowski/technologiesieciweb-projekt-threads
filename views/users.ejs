@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+    <title>User list</title>
+</head>
+<body>
+    <form action="/auth/me" method="GET">
+        <button type="submit">Moje konto</button>
+    </form>
+    <% if (isAdmin) { %>
+    <ul>
+        <% users.forEach(user => { %>
+            <li>
+                <strong><%= user.login %></strong> — <%= user.email %><a href="/users/find/<%= user._id %>">Edytuj</a>
+            </li>
+        <% }) %>
+    </ul>
+    <form action="/auth/register" method="GET">
+        <button type="submit">Dodaj użytkownika</button>
+    </form>
+    <% } %>
+</body>
+</html>

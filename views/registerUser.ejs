@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+    <title>Main Page</title>
+</head>
+<body>
+    <% if (!isAdmin) { %>
+        <form action="/auth/register" method="POST">
+            <inline>Podaj login do rejestracji: <input type="text" name="login" required>
+            <inline>Podaj email do rejestracji: <input type="email" name="email" required>
+            <inline>Podaj hasło do rejestracji: <input type="password" name="password" required>
+            <inline>Czy admin?<input type="checkbox" name="ifAdmin">
+            <br>
+            <button type="submit">Dodaj użytkownika</button>        
+        </form>
+    <% } else { %>
+        <div>Brak dostępu</div>
+    <% } %>
+</body>
+</html>
