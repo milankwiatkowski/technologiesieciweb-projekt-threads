@@ -7,23 +7,24 @@ const Subthread = require(path.join(process.cwd(), 'models', 'Subthread'));
 router.get('/',async(req,res)=>{
     try{
         const threads = await Thread.find()
-        res.render('mainPage',{threads:threads})
+        return res.json({threads:threads,status:200})
     }
     catch{
-        res.send({"message":"An error occured, we're working on it."})
+        return res.json({status:400})
     }
 })
 router.post('/',async(req,res)=>{
     try{
-        const newThread = new Thread({title:req.body.title,subThreadsId:[],modsThreadId:[req.user.id],creatorId:[req.user.id]})
+        const newThread = new Thread({title:req.body.title,subThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id})
         await newThread.save()
-        res.redirect('/threads')
+        const threads = await Thread.find()
+        return res.json({threads:threads,status:200})
     }
     catch{
-        res.send({"message":"An error occured, we're working on it."})
+        return res.json({message:"An error occured, we're working on it.",status:400})
     }
 })
-router.post('/:threadId',async(req,res)=>{
+router.delete('/:threadId',async(req,res)=>{
     try{
         const threadToBeDeleted = await Thread.findById(req.params.threadId)
         if(req.user.id === threadToBeDeleted.creatorId  || req.user.isAdmin){
@@ -31,11 +32,12 @@ router.post('/:threadId',async(req,res)=>{
                 await Subthread.findByIdAndDelete(x)
             })
             await Thread.findByIdAndDelete(req.params.threadId)
-            res.redirect(`/threads/`)
+            const threads = await Thread.find()
+            return res.json({threads:threads,status:200})
         }
     }
     catch{
-        res.send({'message':'You are not the thread creator nor the administrator!'})
+        return res.json({message:'You are not the thread creator nor the administrator!',status:400})
     }
 })
 module.exports = router

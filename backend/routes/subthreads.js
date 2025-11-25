@@ -5,14 +5,22 @@ const User = require('../models/User');
 const Thread = require(path.join(process.cwd(), 'models', 'Thread'));
 const Subthread = require(path.join(process.cwd(), 'models', 'Subthread'));
 
-router.get('/:threadId',async(req,res)=>{
+router.get('/:threadId/:page/:limit',async(req,res)=>{
     try{
-        const parentThread = await Thread.findById(req.params.threadId)
+        const {threadId,page,limit} = req.params
+        const parentThread = await Thread.findById(threadId)
         const subthreads = await Subthread.find({mainThreadId:parentThread})
-        res.render('subthreadmainPage',{subthreads:subthreads,parentId:req.params.threadId})
+        let limitedSubthreads = []
+        if(subthreads.length >= page*limit){
+            limitedSubthreads = subthreads.slice((page-1)*limit,page*limit)
+        }
+        else{
+            limitedSubthreads = subthreads.slice((page-1)*limit,subthreads.length-1)
+        }
+        return res.json({subthreads:limitedSubthreads,status:200})
     }
     catch{
-        res.send({"message":"An error occured, we're working on it."})
+        return res.json({status:400})
     }
 })
 router.get('/:threadId/admin',async(req,res)=>{
@@ -30,10 +38,10 @@ router.get('/:threadId/admin',async(req,res)=>{
 router.get('/subthread/:subthreadId',async(req,res)=>{
     try{
         const subthread = await Subthread.findById(req.params.subthreadId)
-        res.render('subthreadPage',{subthread:subthread})
+        res.json({subthread:subthread,status:200})
     }
     catch{
-        res.send({"message":"An error occured!"})
+        res.json({status:400})
     }
 })
 router.post('/:threadId',async(req,res)=>{
@@ -41,7 +49,7 @@ router.post('/:threadId',async(req,res)=>{
         const user = await User.findById(req.user.id)
         if(!user.blockedInThreadsId.find((x) => x.toString() === req.params.threadId)){
             const parentThread = await Thread.findById(req.params.threadId)
-            const newSubthread = new Subthread({title:req.body.title,content:req.body.content,mainThreadId:parentThread._id})
+            const newSubthread = new Subthread({title:req.body.title,content:req.body.content,mainThreadId:parentThread._id,subthreadCreatorId:req.user.id,userLikesId:[],likes:0})
             await newSubthread.save()
             const subthreadIdTab = parentThread.subThreadsId
             subthreadIdTab.push(newSubthread._id)
@@ -50,14 +58,14 @@ router.post('/:threadId',async(req,res)=>{
                 { $set: {subThreadsId: subthreadIdTab} },
                 { new: true, runValidators: true }
             );
-            res.redirect(`/subthreads/${req.params.threadId}`)
+            return res.json({status:200}) 
         }
     }
     catch{
-        res.send({"message":`There is no thread with this id: ${req.params.threadId}!`})
+        return res.json({message:`There is no thread with this id: ${req.params.threadId}!`})
     }
 })
-router.post('/subthread/:subthreadId',async(req,res)=>{
+router.delete('/:subthreadId',async(req,res)=>{
     try{
         const subthreadToBeDeleted = await Subthread.findById(req.params.subthreadId)
         const parentThread = await Thread.findById(subthreadToBeDeleted.mainThreadId)
@@ -70,11 +78,41 @@ router.post('/subthread/:subthreadId',async(req,res)=>{
                 { $set: {subThreadsId: newTab} },
                 { new: true, runValidators: true }
             );
-            res.redirect(`/subthreads/${parentThread._id}`)
+            res.json({status:200})
         }
     }
     catch{
-        res.send({'message':'You are not the subthread creator nor the administrator!'})
+        res.send({status:400})
+    }
+})
+router.get('/:subthreadId/likes',async(req,res)=>{
+    try{
+        const subthread = await Subthread.findById(req.params.subthreadId)
+        return res.json({likes:subthread.likes,status:200})
+    }
+    catch{
+        return res.json({status:400})
+    }
+})
+router.post('/:subthreadId/likes',async(req,res)=>{
+    try{
+        const subthread = await Subthread.findById(req.params.subthreadId)
+        if(subthread.userLikesId.find((x) => x.toString() === req.user.id)){
+            const updated = await Subthread.findByIdAndUpdate(
+            req.params.subthreadId,
+            { $set: {likes: subthread.likes-1, userLikesId: subthread.userLikesId.filter((x) => x.toString() !== req.user.id)}},
+            { new: true, runValidators: true })
+        }
+        else{
+            const updated = await Subthread.findByIdAndUpdate(
+            req.params.subthreadId,
+            { $set: {likes: subthread.likes+1, userLikesId: [...subthread.userLikesId,req.user.id]}},
+            { new: true, runValidators: true })
+        }
+        return res.json({status:200})
+    }
+    catch{
+        return res.json({status:400})
     }
 })
 module.exports = router

@@ -45,11 +45,11 @@ router.post('/login', async (req, res,next) => {
                     id: user._id,isAdmin:user.isAdmin},
                     SECRET,
                     { expiresIn: '1d' });
-                    res.cookie("jwt", accessToken, { httpOnly: true });
-                res.redirect('/threads/')
+                    res.cookie("jwt", accessToken, { httpOnly: true, secure:true,sameSite:"none",path:"/" });
+                return res.json({message:"Login successful!",status:200})
             }
             else{
-                return res.json({"message":"Niepoprawne hasło"})
+                return res.json({message:"Incorrect password",status:400})
             }
         }
     }
@@ -64,23 +64,22 @@ router.post('/register', async (req, res,next) => {
     let salt = crypto.randomBytes(Number(SALT_BITS));
     crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
         if (err) { return next(err); }
-        if(req.body.ifAdmin !== 'on'){
-            req.body.ifAdmin = false
-        }
-        else{
-            req.body.ifAdmin = true
-        }
-        const user = new User({isAdmin:req.body.ifAdmin,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt})
+        const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt})
         await user.save()
-        res.render('userAdded', {id:user._id,login:req.body.login,email:req.body.email})});
+        res.json({message:"Registration successful!",status:200})})
 });
 router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) => {
-    res.render('myProfile',{authenticated:true,user:req.user})
+    try{
+        res.json({user:req.user,status:200})
+    }
+    catch(err){
+        console.log(err)
+    }
 });
 
 router.post('/logout', (req, res, next) => {
     res.clearCookie('jwt')
-    res.redirect('/auth/login');
+    res.json({status:200})
 });
 
 module.exports = router;

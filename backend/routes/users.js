@@ -4,17 +4,25 @@ const path = require('node:path');
 const User = require(path.join(process.cwd(), 'models', 'User'));
 const {isAdmin} = require('./middleware')
 router.get('/',isAdmin, async (req, res) => {
-    const users =  await User.find()
-    res.render('users',{users:users,isAdmin:req.user && req.user.isAdmin});
+    try{
+        const users =  await User.find()
+        res.json({users:users,status:200})
+    }
+    catch{
+        res.json({message:"Error"})
+    }
 });
 
-router.post('/delete/:idUser',isAdmin, async (req, res) => {
-    const id = req.params.idUser;
+router.delete('/:idUser',isAdmin, async (req, res) => {
     try{
-        await User.findByIdAndDelete(id)
-        res.render('userDeleted', {id:id})}
+        const user = User.findById(req.params.idUser)
+        if(!user.isAdmin){
+            await User.findByIdAndDelete(req.params.idUser)
+            res.json({message:"User deleted",status:200})
+        }
+    }    
     catch (err){
-        res.render('userNotFound', {id:id})
+        res.json({message:"User not found or is an admin",status:400})
     }
 });
 
