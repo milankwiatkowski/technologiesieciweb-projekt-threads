@@ -70,7 +70,7 @@ router.post('/register', async (req, res,next) => {
 });
 router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) => {
     try{
-        res.json({user:req.user,status:200})
+        return res.json({user:req.user,status:200})
     }
     catch(err){
         console.log(err)

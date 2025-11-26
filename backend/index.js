@@ -5,7 +5,6 @@ const cors = require('cors')
 const users = require(path.join(process.cwd(), 'routes','users'));
 const threads = require(path.join(process.cwd(), 'routes','threads'));
 const auth = require(path.join(process.cwd(), 'routes','auth'));
-const subthreads = require(path.join(process.cwd(), 'routes','subthreads'));
 const session = require('express-session')
 const cookieParser = require("cookie-parser");
 const {isAuthenticated} = require('./routes/middleware')
@@ -32,7 +31,6 @@ app.use(express.static(path.join(process.cwd(), "public")));
 app.use('/users',isAuthenticated, users);
 app.use('/auth', auth);
 app.use('/threads',isAuthenticated, threads)
-app.use('/subthreads',isAuthenticated,subthreads)
 app.set('view engine','ejs')
 // Wczytujemy ewentualne dane konfiguracyjne z pliku „.env”
 const dbConnData = {

@@ -20,14 +20,14 @@ async function getsubThread(){
 }
 
 async function getLikes(){
-    const fetch = axios.get(`http://localhost:3000/subthreads/${subthreadId}/likes`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`http://localhost:3000/threads/${threadId}/likes`,{withCredentials:true}).then((res)=>{
         likes.value = res.data.likes
     }).catch((err)=>{
         console.log(err)
     })
 }
 async function like(){
-    const fetch = axios.post(`http://localhost:3000/subthreads/${subthreadId}/likes`,{},{withCredentials:true}).then(()=>{
+    const fetch = axios.post(`http://localhost:3000/threads/${threadId}/likes`,{},{withCredentials:true}).then(()=>{
         getLikes()
     }).catch((err)=>{
         console.log(err)

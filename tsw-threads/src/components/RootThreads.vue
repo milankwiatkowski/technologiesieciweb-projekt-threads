@@ -7,9 +7,12 @@ const router = useRouter()
 
 const threads = ref([])
 const title = ref('')
+const content = ref('')
 
-async function getThreads(){
-    const fetch = axios.get('http://localhost:3000/threads/',{withCredentials:true}).then((res)=>{
+const lastPage = ref(Number(localStorage.getItem("lastRootPage")) || 1)
+
+async function getThreads(page){
+    const fetch = axios.get(`http://localhost:3000/threads/${page}/${10}`,{withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
         console.log(threads.value)
     }).catch((err)=>{
@@ -32,7 +35,8 @@ async function deleteThread(id){
 
 async function addThread(){
     const fetch = axios.post('http://localhost:3000/threads/',{
-        title: title.value},
+        title: title.value,
+        content: content.value},
         {withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
     }).catch((err)=>{
@@ -40,8 +44,22 @@ async function addThread(){
     })
 }
 
+async function nextPage(){
+    lastPage.value++
+    localStorage.setItem("lastRootPage",lastPage.value)
+    getThreads(lastPage.value)
+}
+
+async function prevPage(){
+    if(lastPage.value>1){
+        lastPage.value--
+        localStorage.setItem("lastRootPage",lastPage.value)
+        getThreads(lastPage.value)
+    }
+}
+
 onMounted(()=>{
-    getThreads()
+    getThreads(lastPage.value)
 })
 
 </script>
@@ -49,14 +67,18 @@ onMounted(()=>{
     <ul v-if="threads && threads.length>0">
         <li v-for="thread in threads":key="thread._id">
             {{thread.title}}
+            {{thread.content}}
             <button @click="getThreadDetails(thread._id)">See more</button>
             <button @click="deleteThread(thread._id)">Delete</button>
         </li>
     </ul>
     <p v-else-if="threads && threads.length==0">No threads.</p>
     <p v-else>Loading...</p>
+    <button @click="prevPage()">Previous page</button>
+    <button @click="nextPage()">Next page</button>
     <form @submit.prevent="addThread">
         <input v-model="title" placeholder="Add title" required />
+        <input v-model="content" placeholder="Add content" required />
         <button>Add Thread</button>
     </form>
 </template>
