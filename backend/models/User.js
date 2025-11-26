@@ -8,8 +8,7 @@ const userSchema = new Schema({
     registrationDate: Date,
     password: Buffer,
     salt: Buffer,
-    modOfThreadsId:[String],
-    blockedInThreadsId: [String]
+    modOfThreadsId:[Schema.Types.ObjectId]
 });
 
 module.exports = model('User', userSchema);

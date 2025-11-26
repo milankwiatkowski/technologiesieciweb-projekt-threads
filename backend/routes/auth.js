@@ -64,7 +64,7 @@ router.post('/register', async (req, res,next) => {
     let salt = crypto.randomBytes(Number(SALT_BITS));
     crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
         if (err) { return next(err); }
-        const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt})
+        const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[]})
         await user.save()
         res.json({message:"Registration successful!",status:200})})
 });

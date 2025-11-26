@@ -17,7 +17,7 @@ export default createRouter({
     { path: '/thread/:threadId', component: AllSubthreadsPage },
     { path: '/threads', component: Threads },
     { path: '/subthreads/:threadId', component: SingleSubthreadPage },
-    { path: '/modpanel', component: ThreadModeratorPanel },
+    { path: '/modpanel/:threadId', component: ThreadModeratorPanel },
     { path: '/users', component: Users }
   ]
 })

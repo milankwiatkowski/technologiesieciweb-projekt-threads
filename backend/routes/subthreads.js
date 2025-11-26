@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const path = require('node:path');
-const User = require('../models/User');
+const User = require(path.join(process.cwd(), 'models', 'User'));
 const Thread = require(path.join(process.cwd(), 'models', 'Thread'));
 const Subthread = require(path.join(process.cwd(), 'models', 'Subthread'));
 
@@ -9,15 +9,8 @@ router.get('/:threadId/:page/:limit',async(req,res)=>{
     try{
         const {threadId,page,limit} = req.params
         const parentThread = await Thread.findById(threadId)
-        const subthreads = await Subthread.find({mainThreadId:parentThread})
-        let limitedSubthreads = []
-        if(subthreads.length >= page*limit){
-            limitedSubthreads = subthreads.slice((page-1)*limit,page*limit)
-        }
-        else{
-            limitedSubthreads = subthreads.slice((page-1)*limit,subthreads.length-1)
-        }
-        return res.json({subthreads:limitedSubthreads,status:200})
+        const subthreads = await Subthread.find({mainThreadId:parentThread}).skip((page-1)*limit).limit(Number(limit))
+        return res.json({subthreads:subthreads,status:200})
     }
     catch{
         return res.json({status:400})
@@ -46,16 +39,19 @@ router.get('/subthread/:subthreadId',async(req,res)=>{
 })
 router.post('/:threadId',async(req,res)=>{
     try{
-        const user = await User.findById(req.user.id)
-        if(!user.blockedInThreadsId.find((x) => x.toString() === req.params.threadId)){
-            const parentThread = await Thread.findById(req.params.threadId)
+        const parentThread = await Thread.findById(req.params.threadId)
+        if(!parentThread.blockedId.includes(req.user.id)){
             const newSubthread = new Subthread({title:req.body.title,content:req.body.content,mainThreadId:parentThread._id,subthreadCreatorId:req.user.id,userLikesId:[],likes:0})
             await newSubthread.save()
-            const subthreadIdTab = parentThread.subThreadsId
-            subthreadIdTab.push(newSubthread._id)
+            const subthreadIdTab = [...parentThread.subThreadsId,newSubthread._id]
+            const authors = parentThread.threadAuthors
+            if(!authors.find((x) => x.id.toString() === req.user.id)){
+                const user = await User.findById(req.user.id)
+                authors.push({id:req.user.id,login:user.login})
+            }
             const updated = await Thread.findByIdAndUpdate(
                 req.params.threadId,
-                { $set: {subThreadsId: subthreadIdTab} },
+                { $set: {subThreadsId: subthreadIdTab,threadAuthors:authors} },
                 { new: true, runValidators: true }
             );
             return res.json({status:200}) 
@@ -69,7 +65,7 @@ router.delete('/:subthreadId',async(req,res)=>{
     try{
         const subthreadToBeDeleted = await Subthread.findById(req.params.subthreadId)
         const parentThread = await Thread.findById(subthreadToBeDeleted.mainThreadId)
-        if(req.user.id === subthreadToBeDeleted.subthreadCreatorId || parentThread.modsThreadId.find((x)=> x === req.user.id) || parentThread.creatorId === req.user.id || req.user.isAdmin){
+        if(req.user.id === subthreadToBeDeleted.subthreadCreatorId || parentThread.modsThreadId.find((x)=> x.toString() === req.user.id) || parentThread.creatorId === req.user.id || req.user.isAdmin){
             await Subthread.findByIdAndDelete(req.params.subthreadId)
             const subthreadIdTab = parentThread.subThreadsId
             const newTab = subthreadIdTab.filter((x) => x.toString() !== req.params.subthreadId)
@@ -78,11 +74,11 @@ router.delete('/:subthreadId',async(req,res)=>{
                 { $set: {subThreadsId: newTab} },
                 { new: true, runValidators: true }
             );
-            res.json({status:200})
+            return res.json({status:200})
         }
     }
     catch{
-        res.send({status:400})
+        return res.json({status:400})
     }
 })
 router.get('/:subthreadId/likes',async(req,res)=>{
