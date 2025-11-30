@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from './pages/Login.vue'
 import MyProfile from './pages/MyProfile.vue'
 import Register from './pages/Register.vue'
-import SingleSubthreadPage from './pages/SingleSubthreadPage.vue'
 import ThreadModeratorPanel from './pages/ThreadModeratorPanel.vue'
 import RootThreads from './pages/RootThreads.vue'
 import Users from './pages/Users.vue'
@@ -16,7 +15,6 @@ export default createRouter({
     { path: '/myprofile', component: MyProfile },
     { path: '/thread/:threadId', component: ChildThreadsPage },
     { path: '/threads', component: RootThreads },
-    { path: '/subthreads/:threadId', component: SingleSubthreadPage },
     { path: '/modpanel/:threadId', component: ThreadModeratorPanel },
     { path: '/users', component: Users }
   ]

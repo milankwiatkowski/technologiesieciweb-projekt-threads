@@ -11,7 +11,9 @@ const threadSchema = new Schema({
     threadAuthors: [{id:{type:Schema.Types.ObjectId},login:String}],
     userLikesId:[Schema.Types.ObjectId],
     likes:Number,
-    blockedId : [Schema.Types.ObjectId]
+    blockedId : [Schema.Types.ObjectId],
+    tags:[String],
+    isClosed:Boolean
 });
 
 module.exports = model('Thread', threadSchema);

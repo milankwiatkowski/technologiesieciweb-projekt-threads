@@ -61,7 +61,7 @@ router.get('/:threadId/:page/:limit',async(req,res)=>{
                 content: child.content
             }
         }))
-        return res.json({threads:childThreads,status:200})
+        return res.json({threads:childThreads,thread:thread,status:200})
     }
     catch (err){
         console.log(err)
@@ -72,20 +72,35 @@ router.delete('/:threadId',async(req,res)=>{
     try{
         const threadToBeDeleted = await Thread.findById(req.params.threadId)
         if(req.user.id === threadToBeDeleted.creatorId  || req.user.isAdmin){
-            await Promise.all(threadToBeDeleted.childThreadsId.map(async (x)=>{
-                await Thread.findByIdAndDelete(x)
-            }))
-            const parentThread = await Thread.findById(threadToBeDeleted.parentThreadId)
-            const filteredChildren = parentThread.childThreadsId.filter((x) => x.toString() !== req.params.threadId)
-            await Thread.findByIdAndDelete(req.params.threadId)
-            const update = await Thread.findByIdAndUpdate(
-                parentThread._id,
-                { $set: {childThreadsId: filteredChildren}},
-                { set:true, runValidators:true}
-            )
+            const stack = []
+            async function getChildren(thread){
+                if(thread.childThreadsId.length === 0){
+                    stack.push(thread._id)
+                }
+                else{
+                    for(let i=0;i<thread.childThreadsId.length;i++){
+                        const child = await Thread.findById(thread.childThreadsId[i])
+                        await getChildren(child)
+                        stack.push(child._id)
+                    }
+                }
+            }
+            await getChildren(threadToBeDeleted)
+            for(let i=0;i<stack.length;i++){
+                await Thread.findByIdAndDelete(stack[i])
+            }
+            await Thread.findByIdAndDelete(threadToBeDeleted._id)
+            if(threadToBeDeleted.parentThreadId!=null){
+                const parentThread = await Thread.findById(threadToBeDeleted.parentThreadId)
+                const filteredChildren = parentThread.childThreadsId.filter((x) => x.toString() !== req.params.threadId)
+                const update = await Thread.findByIdAndUpdate(
+                    parentThread._id,
+                    { $set: {childThreadsId: filteredChildren}},
+                    { new:true, runValidators:true}
+                )}
+            }
             const threads = await Thread.find()
             return res.json({threads:threads,status:200})
-        }
     }
     catch{
         return res.json({message:'You are not the thread creator nor the administrator!',status:400})
@@ -93,7 +108,7 @@ router.delete('/:threadId',async(req,res)=>{
 })
 router.post('/',async(req,res)=>{
     try{
-        const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:null,childThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[]})
+        const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:null,childThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[],tags:[],isClosed:false})
         await newThread.save()
         const threads = await Thread.find()
         return res.json({threads:threads,status:200})
@@ -105,8 +120,8 @@ router.post('/',async(req,res)=>{
 router.post('/:threadId',async(req,res)=>{
     try{
         const parentThread = await Thread.findById(req.params.threadId)
-        if(!parentThread.blockedId.includes(req.user.id)){
-            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId]})
+        if(!parentThread.blockedId.includes(req.user.id) && !parentThread.isClosed){
+            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false})
             await newThread.save()
             const authors = parentThread.threadAuthors
             if(!authors.find((x) => x.id.toString() === req.user.id)){
@@ -163,6 +178,32 @@ router.post('/:threadId/givemod/:userId',async(req,res)=>{
             { $set: {modsThreadId:mods}},
             { new:true, runValidators:true}
         )
+        return res.json({status:200})
+    }
+    catch{
+        return res.json({status:400})
+    }
+})
+router.post('/close/:threadId',async(req,res)=>{
+    try{
+        const thread = await Thread.findById(req.params.threadId)
+        const mods = thread.modsThreadId
+        if(mods.includes(req.user.id) || req.user.isAdmin){
+            if(thread.isClosed){
+                const update = await Thread.findByIdAndUpdate(
+                    req.params.threadId,
+                    {$set: {isClosed:false}},
+                    {new:true, runValidators:true}
+                )
+            }
+            else{
+                const update = await Thread.findByIdAndUpdate(
+                    req.params.threadId,
+                    {$set: {isClosed:true}},
+                    {new:true, runValidators:true}
+                )
+            }
+        }
         return res.json({status:200})
     }
     catch{

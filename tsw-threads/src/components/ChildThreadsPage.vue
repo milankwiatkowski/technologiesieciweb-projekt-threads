@@ -2,6 +2,7 @@
 import {ref,onMounted, watch} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
+import ThreadModeratorPanel from "./ThreadModeratorPanel.vue";
 
 const route = useRoute();
 const router = useRouter()
@@ -13,7 +14,7 @@ const title = ref('')
 const content = ref('')
 const me = ref({})
 const likes = ref(0)
-
+const thread = ref({})
 
 const lastPage = ref(Number(localStorage.getItem("lastPage")) || 1)
 
@@ -21,6 +22,7 @@ async function getThreads(page){
     const fetch = axios.get(`http://localhost:3000/threads/${threadId}/${page}/${10}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
+        thread.value = res.data.thread
     }).catch((err)=>{
             console.log(err)
     })
@@ -73,7 +75,13 @@ async function getMyData(){
         console.log(err)
     })
 }
-
+async function close(){
+    const fetch = axios.post(`http://localhost:3000/threads/close/${threadId}`,{},{withCredentials:true}).then(()=>{
+        getThreads(lastPage.value)
+    }).catch((err)=>{
+        console.log(err)
+    })
+}
 async function getLikes(){
     const fetch = axios.get(`http://localhost:3000/threads/${threadId}/likes`,{withCredentials:true}).then((res)=>{
         likes.value = res.data.likes
@@ -96,6 +104,14 @@ onMounted(()=>{
     getLikes()
 })
 
+watch(
+  () => route.params.threadId,
+  (newId) => {
+    getThreads(newId)
+  },
+  { immediate: true }
+)
+
 </script>
 <template>
     <ul>
@@ -105,14 +121,20 @@ onMounted(()=>{
             <button @click="gotoThread(thread._id)">See more</button>
         </li>
     </ul>
+    <button v-if="!thread.isClosed" @click="close()">Close thread</button>
+    <button v-if="thread.isClosed" @click="close()">Reopen thread</button>
+    <p>{{ thread.isClosed }}</p>
     <p>Likes: {{likes}}</p>
+    <p>Content: {{ thread.content }}</p>
     <button @click="like(id)">Like</button>
     <button @click="prevPage()">Previous page</button>
     <button @click="nextPage()">Next page</button>
-    <form @submit.prevent="addThread">
-        <input v-model="title" placeholder="Add title" required />
-        <input v-model="content" placeholder="Add content" required />
-        <button>Add Thread</button>
-    </form>
+    <div v-if="!thread.isClosed">
+        <form @submit.prevent="addThread">
+            <input v-model="title" placeholder="Add title" required />
+            <input v-model="content" placeholder="Add content" required />
+            <button>Add Thread</button>
+        </form>
+    </div>
     <!-- <button v-if="me && parentThread && parentThread.threadAuthors && (me.isAdmin || parentThread.threadAuthors.includes(me._id))" @click="goToModpanel(parentThread._id)">Zarządzaj</button> -->
 </template>

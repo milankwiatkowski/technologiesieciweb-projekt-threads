@@ -76,9 +76,11 @@ onMounted(()=>{
     <p v-else>Loading...</p>
     <button @click="prevPage()">Previous page</button>
     <button @click="nextPage()">Next page</button>
-    <form @submit.prevent="addThread">
-        <input v-model="title" placeholder="Add title" required />
-        <input v-model="content" placeholder="Add content" required />
-        <button>Add Thread</button>
-    </form>
+    <div>
+        <form @submit.prevent="addThread">
+            <input v-model="title" placeholder="Add title" required />
+            <input v-model="content" placeholder="Add content" required />
+            <button>Add Thread</button>
+        </form>
+    </div>
 </template>
