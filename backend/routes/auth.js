@@ -16,6 +16,14 @@ const cookieExtractor = req => {
     }
     return null;
 };
+const time = new Date().toLocaleString('pl-PL', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit'
+});
 const opts = {
   jwtFromRequest: cookieExtractor,
   secretOrKey: SECRET,
@@ -32,10 +40,8 @@ passport.use(new Strategy(opts, async (payload, done) => {
     }
 }));
 
-router.get('/login', async (req, res) => {
-    res.render('login');
-});
 router.post('/login', async (req, res,next) => {
+    console.log(`INFO User is logging in ${time}`)
     try{
         const user = await User.findOne({login:req.body.login})
         if(user){
@@ -46,34 +52,50 @@ router.post('/login', async (req, res,next) => {
                     SECRET,
                     { expiresIn: '1d' });
                     res.cookie("jwt", accessToken, { httpOnly: true, secure:true,sameSite:"none",path:"/" });
+                console.log(`INFO User ${req.body.login} succesfully logged in ${time}`)
                 return res.json({message:"Login successful!",status:200})
             }
             else{
+                console.log(`INFO User ${req.body.login} tried logging in but failed due to an incorrect password ${time}`)
                 return res.json({message:"Incorrect password",status:400})
             }
         }
     }
     catch (error){
+        console.log(`ERROR ${error} ${time}`)
         next(error)
     }
 });
-router.get('/register', async (req, res) => {
-    res.render('registerUser',{isAdmin:req.user && req.user.isAdmin});
-});
 router.post('/register', async (req, res,next) => {
-    let salt = crypto.randomBytes(Number(SALT_BITS));
-    crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-        if (err) { return next(err); }
-        const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[]})
-        await user.save()
-        res.json({message:"Registration successful!",status:200})})
+    console.log(`INFO User ${req.body.login} is trying to register ${time}`)
+    try{
+        let salt = crypto.randomBytes(Number(SALT_BITS));
+        const users = await User.find({login:req.body.login})
+        if(users.length===0){
+            crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
+                const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[]})
+                if (err) { return next(err); }
+                console.log(`INFO User ${req.body.login} registered succesfully ${time}`)
+                await user.save()
+                return res.json({message:"Registration successful!",status:200})})
+            }
+        else{
+            console.log(`INFO Username ${req.body.login} was already taken ${time}`)
+            return res.status(500).json({message:"Username already taken"})
+        }
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
+        return res.json({message:"Error occured",status:400})
+    }
 });
 router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) => {
     try{
+        console.log(`INFO User ${req.user.login} is requesting authentication ${time}`)
         return res.json({user:req.user,status:200})
     }
     catch(err){
-        console.log(err)
+        console.log(`ERROR ${err} ${time}`)
     }
 });
 

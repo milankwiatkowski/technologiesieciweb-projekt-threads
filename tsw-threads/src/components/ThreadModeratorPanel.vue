@@ -6,7 +6,7 @@ import axios from "axios"
 const route = useRoute()
 
 const threadId = route.params.threadId
-const parentThread = ref({})
+const thread = ref({})
 const me = ref({})
 
 
@@ -19,8 +19,8 @@ async function getMyData(){
 }
 
 async function getAuthors(){
-    const fetch = axios.get(`http://localhost:3000/threads/${threadId}`,{withCredentials:true}).then((res)=>{
-        parentThread.value = res.data.thread
+    const fetch = axios.get(`http://localhost:3000/threads/${threadId}/${1}/${10}`,{withCredentials:true}).then((res)=>{
+        thread.value = res.data.thread
     }).catch((err)=>{
         console.log(err)
     })
@@ -52,14 +52,14 @@ onMounted(()=>{
 </script>
 
 <template>
-    <div v-if="parentThread && parentThread.title">Welcome to ModPanel for Thread {{parentThread.title}}</div>
-    <ul v-if="parentThread && parentThread.threadAuthors">
-        <li v-for="author in parentThread.threadAuthors":key="author.id">
+    <div v-if="thread && thread.title">Welcome to ModPanel for Thread {{thread.title}}</div>
+    <ul v-if="thread && thread.threadAuthors">
+        <li v-for="author in thread.threadAuthors":key="author.id">
             {{ author.login }}
             {{ author.id }}
-            <button @click="blockUser(author.id)">Block this user in this Thread</button>
-            <button @click="giveMod(author.id)">Give mod to this user in this Thread</button>
-            <button @click="takeMod(author.id)">Take mod from this user in this Thread</button>
+            <button v-if="!thread.blockedId.includes(author.id)" @click="blockUser(author.id)">Block this user in this Thread</button>
+            <button v-if="!thread.modsThreadId.includes(author.id)" @click="giveMod(author.id)">Give mod to this user in this Thread</button>
+            <button v-if="thread.modsThreadId.includes(author.id)" @click="takeMod(author.id)">Take mod from this user in this Thread</button>
         </li>
     </ul>
 </template>

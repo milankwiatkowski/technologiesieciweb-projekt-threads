@@ -3,18 +3,29 @@ const router = express.Router();
 const path = require('node:path');
 const User = require(path.join(process.cwd(), 'models', 'User'));
 const Thread = require(path.join(process.cwd(), 'models', 'Thread'));
+const time = new Date().toLocaleString('pl-PL', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit'
+});
 
 router.get('/:threadId/likes',async(req,res)=>{
     try{
+        console.log(`INFO ${req.user.login} tried getting thread likes ${time}`)
         const thread = await Thread.findById(req.params.threadId)
         return res.json({likes:thread.likes,status:200})
     }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({status:400})
     }
 })
 router.post('/:threadId/likes',async(req,res)=>{
     try{
+        console.log(`INFO ${req.user.login} is giving thread a like ${time}`)
         const thread = await Thread.findById(req.params.threadId)
         if(thread.userLikesId.find((x) => x.toString() === req.user.id)){
             const updated = await Thread.findByIdAndUpdate(
@@ -28,28 +39,30 @@ router.post('/:threadId/likes',async(req,res)=>{
             { $set: {likes: thread.likes+1, userLikesId: [...thread.userLikesId,req.user.id]}},
             { new: true, runValidators: true })
         }
-        const e = await Thread.findById(req.params.id)
-        console.log(e.likes)
         return res.json({status:200})
     }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({status:400})
     }
 })
 
 router.get('/:page/:limit',async(req,res)=>{
     try{
-        // await Thread.deleteMany({})
+        console.log(`INFO User ${req.user.login} is requesting root threads ${time}`)
         const {page,limit} = req.params
         const threads = await Thread.find().skip((page-1)*limit).limit(Number(limit))
         const filtered = threads.filter((x) => x.parentThreadId === null)
+        console.log(`INFO User ${req.user.login} was granted root threads ${time}`)
         return res.json({threads:filtered,status:200})
     }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({status:400})
     }
 })
 router.get('/:threadId/:page/:limit',async(req,res)=>{
+    console.log(`INFO User ${req.user.login} is requesting threads from ${req.params.threadId} ${time}`)
     try{
         const {page,limit} = req.params
         const thread = await Thread.findById(req.params.threadId)
@@ -61,15 +74,17 @@ router.get('/:threadId/:page/:limit',async(req,res)=>{
                 content: child.content
             }
         }))
+        console.log(`INFO User ${req.user.login} was granted threads from ${req.params.threadId} ${time}`)
         return res.json({threads:childThreads,thread:thread,status:200})
     }
     catch (err){
-        console.log(err)
+        console.log(`ERROR ${err} ${time}`)
         return res.json({status:400});
 }
 })
 router.delete('/:threadId',async(req,res)=>{
     try{
+        console.log(`INFO User ${req.user.login} is trying to delete thread ${req.params.threadId} ${time}`)
         const threadToBeDeleted = await Thread.findById(req.params.threadId)
         if(req.user.id === threadToBeDeleted.creatorId  || req.user.isAdmin){
             const stack = []
@@ -100,25 +115,31 @@ router.delete('/:threadId',async(req,res)=>{
                 )}
             }
             const threads = await Thread.find()
+            console.log(`INFO User ${req.user.login} successfully deleted thread ${req.params.threadId} ${time}`)
             return res.json({threads:threads,status:200})
     }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({message:'You are not the thread creator nor the administrator!',status:400})
     }
 })
 router.post('/',async(req,res)=>{
     try{
+        console.log(`INFO User ${req.user.login} is trying to post a root thread ${time}`)
         const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:null,childThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[],tags:[],isClosed:false})
         await newThread.save()
         const threads = await Thread.find()
+        console.log(`INFO User ${req.user.login} successfully added a root thread ${time}`)
         return res.json({threads:threads,status:200})
     }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({message:"An error occured, we're working on it.",status:400})
     }
 })
 router.post('/:threadId',async(req,res)=>{
     try{
+        console.log(`INFO User ${req.user.login} is trying to post a thread ${req.params.threadId} ${time}`)
         const parentThread = await Thread.findById(req.params.threadId)
         if(!parentThread.blockedId.includes(req.user.id) && !parentThread.isClosed){
             const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false})
@@ -133,15 +154,18 @@ router.post('/:threadId',async(req,res)=>{
                 { $set: {childThreadsId: [...parentThread.childThreadsId,newThread._id], threadAuthors: authors}},
                 { new:true, runValidator:true})
         const threads = await Thread.find({parentThreadId:parentThread._id})
+        console.log(`INFO User ${req.user.login} successfully added a thread ${req.params.threadId} ${time}`)
         return res.json({threads:threads,status:200})
         }
     }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({message:"An error occured, we're working on it.",status:400})
     }
 })
 router.post('/:threadId/block/:userId',async(req,res)=>{
     try{
+        console.log(`INFO User ${req.user.login} is trying to block user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
         const thread = await Thread.findById(req.params.threadId)
         const blocked = thread.blockedId
         if(!blocked.includes(req.params.userId)){
@@ -152,14 +176,17 @@ router.post('/:threadId/block/:userId',async(req,res)=>{
             { $set: {blockedId:blocked}},
             { new:true, runValidators:true}
         )
+        console.log(`INFO User ${req.user.login} successfully blocked user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
         return res.json({status:200})
     }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({status:400})
     }
 })
 router.post('/:threadId/givemod/:userId',async(req,res)=>{
     try{
+        console.log(`INFO User ${req.user.login} is trying to give mod to user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
         const thread = await Thread.findById(req.params.threadId)
         const mods = thread.modsThreadId
         if(!mods.includes(req.params.userId)){
@@ -178,40 +205,17 @@ router.post('/:threadId/givemod/:userId',async(req,res)=>{
             { $set: {modsThreadId:mods}},
             { new:true, runValidators:true}
         )
+        console.log(`INFO User ${req.user.login} successfully gave mod to user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
         return res.json({status:200})
     }
-    catch{
-        return res.json({status:400})
-    }
-})
-router.post('/close/:threadId',async(req,res)=>{
-    try{
-        const thread = await Thread.findById(req.params.threadId)
-        const mods = thread.modsThreadId
-        if(mods.includes(req.user.id) || req.user.isAdmin){
-            if(thread.isClosed){
-                const update = await Thread.findByIdAndUpdate(
-                    req.params.threadId,
-                    {$set: {isClosed:false}},
-                    {new:true, runValidators:true}
-                )
-            }
-            else{
-                const update = await Thread.findByIdAndUpdate(
-                    req.params.threadId,
-                    {$set: {isClosed:true}},
-                    {new:true, runValidators:true}
-                )
-            }
-        }
-        return res.json({status:200})
-    }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({status:400})
     }
 })
 router.delete('/:threadId/givemod/:userId',async(req,res)=>{
     try{
+        console.log(`INFO User ${req.user.login} is trying to take mod from user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
         const thread = await Thread.findById(req.params.threadId)
         const mods = thread.modsThreadId
         if(mods.includes(req.params.userId)){
@@ -231,9 +235,42 @@ router.delete('/:threadId/givemod/:userId',async(req,res)=>{
             { new:true, runValidators:true}
             )
         }
+        console.log(`INFO User ${req.user.login} successfully took mod from user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
         return res.json({status:200})
     }
-    catch{
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
+        return res.json({status:400})
+    }
+})
+router.post('/close/:threadId',async(req,res)=>{
+    try{
+        console.log(`INFO User ${req.user.login} is trying to open/close thread ${req.params.threadId} ${time}`)
+        const thread = await Thread.findById(req.params.threadId)
+        const mods = thread.modsThreadId
+        if(mods.includes(req.user.id) || req.user.isAdmin){
+            if(thread.isClosed){
+                console.log(`INFO User ${req.user.login} is trying to open thread ${req.params.threadId} ${time}`)
+                const update = await Thread.findByIdAndUpdate(
+                    req.params.threadId,
+                    {$set: {isClosed:false}},
+                    {new:true, runValidators:true}
+                )
+            }
+            else{
+                console.log(`INFO User ${req.user.login} is trying to close thread ${req.params.threadId} ${time}`)
+                const update = await Thread.findByIdAndUpdate(
+                    req.params.threadId,
+                    {$set: {isClosed:true}},
+                    {new:true, runValidators:true}
+                )
+            }
+        }
+        console.log(`INFO User ${req.user.login} successfully changed the OPEN/CLOSE status of thread ${req.params.threadId} ${time}`)
+        return res.json({status:200})
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
         return res.json({status:400})
     }
 })

@@ -23,3 +23,14 @@ function logout(){
     <button @click="goToMyProfile()">Mój profil</button>
     <button @click="logout()">Wyloguj się</button>
 </template>
+<style scoped>
+button {
+  background: #333;
+  border: none;
+  padding: 8px 14px;
+  color: #eee;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+</style>
