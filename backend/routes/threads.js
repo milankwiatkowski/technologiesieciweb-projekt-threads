@@ -12,7 +12,18 @@ const time = new Date().toLocaleString('pl-PL', {
   minute: '2-digit',
   second: '2-digit'
 });
+router.get('/find/:tag/:page/:limit',async(req,res)=>{
+    try{
+        console.log(`INFO User ${req.user.login} is searching for threads with tag ${req.params.tag}`)
+        const threads = await Thread.find({tags:req.params.tag}).skip((req.params.page-1)*req.params.limit).limit(Number(req.params.limit)).sort({createdAt:-1})
+        return res.json({threads:threads,status:200})
 
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
+        return res.json({status:400})
+    }
+})
 router.get('/:threadId/likes',async(req,res)=>{
     try{
         console.log(`INFO ${req.user.login} tried getting thread likes ${time}`)
@@ -50,7 +61,35 @@ router.post('/:threadId/likes',async(req,res)=>{
         return res.json({status:400})
     }
 })
-
+router.post('/edit/:threadId',async(req,res)=>{
+    try{
+        console.log(`INFO user ${req.user.login} is editing thread ${req.params.threadId}`)
+        const thread = await Thread.findById(req.params.threadId)
+        console.log(req.body)
+        let title = thread.title
+        let content = thread.content
+        let tags = thread.tags
+        if(req.body.title.length>0){
+            title = req.body.title
+        }
+        if(req.body.content.length>0){
+            content = req.body.content
+        }
+        if(req.body.tags.length>0){
+            tags = req.body.tags.split(' ')
+        }
+        const updated = await Thread.findByIdAndUpdate(req.params.threadId,
+            { $set: {title:title,content:content,tags:tags}},
+            { new:true, runValidators:true})
+        console.log(`INFO User ${req.user.id} successfully updated thread ${req.params.threadId} ${time}`)
+        req.app.get('io').emit('updated',updated)
+        return res.json({status:200})
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
+        return req.json({status:400})
+    }
+})
 router.get('/:page/:limit',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is requesting root threads ${time}`)
@@ -123,7 +162,8 @@ router.delete('/:threadId',async(req,res)=>{
 router.post('/',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to post a root thread ${time}`)
-        const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:null,childThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[],tags:[],isClosed:false})
+        const tags = req.body.tags.split(' ')
+        const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:null,childThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[],tags:[],isClosed:false,tags:tags})
         await newThread.save()
         const threads = await Thread.find()
         console.log(`INFO User ${req.user.login} successfully added a root thread ${time}`)
@@ -139,8 +179,9 @@ router.post('/:threadId',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to post a thread ${req.params.threadId} ${time}`)
         const parentThread = await Thread.findById(req.params.threadId)
+        const tags = req.body.tags.split(' ')
         if(!parentThread.blockedId.includes(req.user.id) && !parentThread.isClosed){
-            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false})
+            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false,tags:[...parentThread.tags,...tags]})
             await newThread.save()
             req.app.get("io").emit("subthreadAdded",newThread)
             const authors = parentThread.threadAuthors
@@ -151,7 +192,7 @@ router.post('/:threadId',async(req,res)=>{
             const update = await Thread.findByIdAndUpdate(
                 req.params.threadId,
                 { $set: {childThreadsId: [...parentThread.childThreadsId,newThread._id], threadAuthors: authors}},
-                { new:true, runValidator:true})
+                { new:true, runValidators:true})
         const threads = await Thread.find({parentThreadId:parentThread._id})
         console.log(`INFO User ${req.user.login} successfully added a thread ${req.params.threadId} ${time}`)
         return res.json({threads:threads,status:200})

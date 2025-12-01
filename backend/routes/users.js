@@ -3,6 +3,9 @@ const router = express.Router();
 const path = require('node:path');
 const User = require(path.join(process.cwd(), 'models', 'User'));
 const {isAdmin} = require('./middleware')
+const crypto = require('node:crypto')
+const HASH_FUNCTION = process.env.HASH || 'sha256'
+const SALT_BITS = process.env.SALT_BITS || 16
 const time = new Date().toLocaleString('pl-PL', {
   day: '2-digit',
   month: 'short',
@@ -54,24 +57,51 @@ router.get('/find/:idUser', async (req, res) => {
     }
 });
 
-router.post('/patch/:idUser',isAdmin, async (req, res) => {
+router.post('/patch/:idUser', async (req, res) => {
     console.log(`INFO User ${req.user.login} is trying to patch user ${req.params.idUser} ${time}`)
     const id = req.params.idUser;
     try{
-        if(req.body.login && req.body.email){
-            await User.findOneAndUpdate({_id:id}, {login:req.body.login, email:req.body.email})
+        if(req.user.id === req.params.idUser){
+            if(req.body.login){
+                const users = await User.find({login:req.body.login})
+                if(users.length===0){
+                    await User.findByIdAndUpdate(req.params.idUser,
+                    { $set: {login:req.body.login}},
+                    { new:true, runValidators:true})
+                    console.log(`INFO User's ${req.body.login} LOGIN was patched successfully ${time}`)
+                }
+                else{
+                    console.log(`INFO Username ${req.body.login} was already taken ${time}`)
+                    return res.status(500).json({message:"Username already taken"})
+                }
+            }
+            else if(req.body.password && req.body.repeatedPassword){
+                let salt = crypto.randomBytes(Number(SALT_BITS));
+                const users = await User.find({login:req.body.login})
+                    crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
+                        const user = await User.findByIdAndUpdate(req.params.idUser,
+                            { $set: {password:hashedPassword}},
+                            { new:true, runValidators:true}
+                        )
+                        if (err) { return next(err); }
+                        console.log(`INFO User's ${req.body.login} PASSWORD was patched succesfully ${time}`)
+                        return res.json({message:"Patch successful",user:user,status:200})})
+            }
+            else if(req.body.email){
+                    await User.findByIdAndUpdate(req.params.idUser,
+                    { $set: {email:req.body.email}},
+                    { new:true, runValidators:true})
+                    console.log(`INFO User's ${req.body.login} EMAIL was patched successfully ${time}`)
+            }
+            console.log(`INFO User ${req.user.id} successfully patched user ${req.params.idUser} ${time}`)
+            const user = await User.findById(req.params.idUser)
+            req.app.get("io").emit('user',user)
+            return res.json({status:200})
         }
-        else if(req.body.login){
-            await User.findOneAndUpdate({_id:id}, {login:req.body.login})
-        }
-        else if(req.body.email){
-            await User.findOneAndUpdate({_id:id}, {email:req.body.email})
-        }
-        console.log(`INFO User ${req.user.login} successfully patched user ${req.params.idUser} ${time}`)
-        res.send({'message':"User successfully patched"})}
+    }
     catch (err){
         console.log(`ERROR ${err} ${time}`)
-        res.render('userNotFound', {id:id})
+        return res.json({status:400})
     }
 });
 

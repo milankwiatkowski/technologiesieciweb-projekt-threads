@@ -9,7 +9,8 @@ const router = useRouter()
 const threads = ref([])
 const title = ref('')
 const content = ref('')
-
+const tags = ref('')
+const me = ref({})
 const lastPage = ref(Number(localStorage.getItem("lastRootPage")) || 1)
 
 socket.on("threadAdded",(thread)=>{
@@ -24,6 +25,14 @@ socket.on("threadAdded",(thread)=>{
 socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
 })
+
+function getMyData(){
+    const fetch = axios.get("http://localhost:3000/auth/me",{withCredentials:true}).then((res)=>{
+        me.value = res.data.user
+    }).catch((err)=>{
+            console.log(err)
+    })
+}
 
 async function getThreads(page){
     const fetch = axios.get(`http://localhost:3000/threads/${page}/${5}`,{withCredentials:true}).then((res)=>{
@@ -49,7 +58,8 @@ async function deleteThread(id){
 async function addThread(){
     const fetch = axios.post('http://localhost:3000/threads/',{
         title: title.value,
-        content: content.value},
+        content: content.value,
+        tags: tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
     })
@@ -71,6 +81,7 @@ async function prevPage(){
 
 onMounted(()=>{
     getThreads(lastPage.value)
+    getMyData()
 })
 </script>
 <template>
@@ -81,31 +92,33 @@ onMounted(()=>{
         <div class="thread-text">
           <strong>{{ thread.title }}</strong>
           <p>{{ thread.content }}</p>
+          <p>{{ thread.tags }}</p>
         </div>
 
         <div class="thread-actions">
           <button @click="getThreadDetails(thread._id)">See more</button>
-          <button @click="deleteThread(thread._id)">Delete</button>
+          <button v-if="me.isAdmin || thread.creatorId === me._id" @click="deleteThread(thread._id)">Delete</button>
         </div>
       </li>
     </ul>
 
     <p v-else-if="threads && threads.length === 0">No threads.</p>
     <p v-else>Loading...</p>
+    <div>
+      <div class="pagination">
+        <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
+        <button v-if="threads.length !== 0" @click="nextPage()">Next page</button>
+      </div>
 
-    <div class="pagination">
-      <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-      <button v-if="threads.length !== 0" @click="nextPage()">Next page</button>
+      <div class="form-wrapper">
+        <form @submit.prevent="addThread">
+          <input v-model="title" placeholder="Add title" required />
+          <input v-model="content" placeholder="Add content" required />
+          <input v-model="tags" placeholder="Add tags" required />
+          <button>Add Thread</button>
+        </form>
+      </div>
     </div>
-
-    <div class="form-wrapper">
-      <form @submit.prevent="addThread">
-        <input v-model="title" placeholder="Add title" required />
-        <input v-model="content" placeholder="Add content" required />
-        <button>Add Thread</button>
-      </form>
-    </div>
-
   </div>
 </template>
 <style scoped>

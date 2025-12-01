@@ -16,6 +16,8 @@ const me = ref({})
 const likes = ref(0)
 const thread = ref({})
 const lastPage = ref(Number(localStorage.getItem("lastPage")) || 1)
+const tags = ref('')
+const isEditing = ref(false)
 
 socket.on("subthreadAdded",(subthread)=>{
     if(lastPage.value==1 && threads.value.length<4){
@@ -37,6 +39,7 @@ async function getThreads(page){
     ).then((res)=>{
         threads.value = res.data.threads
         thread.value = res.data.thread
+        console.log(thread.value)
     }).catch((err)=>{
             console.log(err)
     })
@@ -44,7 +47,7 @@ async function getThreads(page){
 
 async function addThread(){
     const fetch = axios.post(`http://localhost:3000/threads/${threadId}`,{
-        title: title.value, content: content.value},
+        title: title.value, content: content.value,tags:tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
     })
@@ -105,7 +108,20 @@ async function like(){
         console.log(err)
     })
 }
-
+function setEditing(){
+  isEditing.value = true
+}
+async function editThread(id){
+    const fetch = axios.post(`http://localhost:3000/threads/edit/${id}`,{
+        title: title.value,
+        content: content.value,
+        tags: tags.value},
+        {withCredentials:true}).then(()=>{
+          isEditing.value = false
+        }).catch((err)=>{
+        console.log(err)
+    })
+}
 onMounted(()=>{
     getThreads(lastPage.value)
     getMyData()
@@ -123,40 +139,50 @@ watch(
 </script>
 <template>
   <div class="container">
-
-    <ul>
+    <ul v-if="!isEditing">
       <li v-for="thread2 in threads" :key="thread2._id">
         <span>{{ thread2.title }}</span>
-        <span>
+        <span v-if="!isEditing">
           <button @click="deleteThread(thread2._id)">Delete</button>
           <button @click="gotoThread(thread2._id)">See more</button>
         </span>
       </li>
     </ul>
-    <button v-if="!thread.isClosed" @click="close()">Close thread</button>
-    <button v-if="thread.isClosed" @click="close()">Reopen thread</button>
+    <button v-if="!thread.isClosed && (me.isAdmin || thread.creatorId == me._id || (thread.modsThreadId || []).includes(me._id)) && !isEditing" @click="close()">Close thread</button>
+    <button v-if="thread.isClosed && (me.isAdmin || thread.creatorId == me._id || (thread.modsThreadId || []).includes(me._id)) && !isEditing" @click="close()">Reopen thread</button>
 
-    <div class="thread-info">
+    <div class="thread-info" v-if="!isEditing">
       <p><strong>Likes:</strong> {{ likes }}</p>
       <p><strong>Content:</strong> {{ thread.content }}</p>
+      <p><strong>Tags: {{ thread.tags }}</strong></p>
+      <button @click="like()">Like</button>
+      <button v-if="me.isAdmin || thread.creatorId === me._id" @click="setEditing()">Edit</button>
+      <button style="margin-top:20px;" v-if="me.isAdmin || (thread.modsThreadId || []).includes(me._id)" @click="goToModpanel(threadId)">Manage</button>
     </div>
 
-    <button @click="like()">Like</button>
-
-    <div style="margin-top: 20px;">
+    <div style="margin-top: 20px;" v-if="!isEditing">
       <button @click="prevPage()">Previous</button>
       <button @click="nextPage()">Next</button>
     </div>
-    <div v-if="!thread.isClosed && !(thread.blockedId || []).includes(me._id)">
+    <div v-if="!thread.isClosed && !(thread.blockedId || []).includes(me._id) && !isEditing">
       <form @submit.prevent="addThread">
         <input v-model="title" placeholder="Add title" required />
         <input v-model="content" placeholder="Add content" required />
-        <button>Add</button>
+        <input v-model="tags" placeholder="Add tags" required />
+        <button>Add thread</button>
       </form>
     </div>
-
-    <button style="margin-top:20px;" v-if="me.isAdmin || (thread.modsThreadId || []).includes(me._id)" @click="goToModpanel(threadId)">Manage</button>
-
+    <div v-else>
+      <form @submit="editThread(thread._id)">
+        <div><strong>Current title:</strong> {{ thread.title }}
+        <input v-model="title" placeholder="Change title"  /></div>
+        <div><strong>Current content:</strong> {{ thread.content }}
+        <input v-model="content" placeholder="Change content" /></div>
+        <div><strong>Current tags:</strong> {{ thread.tags }}
+        <input v-model="tags" placeholder="Change tags" /></div>
+        <button>Submit editing</button>
+      </form>
+    </div>
   </div>
 </template>
 

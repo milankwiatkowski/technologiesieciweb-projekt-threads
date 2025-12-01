@@ -6,6 +6,7 @@ import ThreadModeratorPanel from './pages/ThreadModeratorPanel.vue'
 import RootThreads from './pages/RootThreads.vue'
 import Users from './pages/Users.vue'
 import ChildThreadsPage from './pages/ChildThreadsPage.vue'
+import FoundByTag from './components/FoundByTag.vue'
 
 export default createRouter({
   history: createWebHistory(),
@@ -16,6 +17,7 @@ export default createRouter({
     { path: '/thread/:threadId', component: ChildThreadsPage },
     { path: '/threads', component: RootThreads },
     { path: '/modpanel/:threadId', component: ThreadModeratorPanel },
-    { path: '/users', component: Users }
+    { path: '/users', component: Users },
+    { path: '/searched/:tag', component:FoundByTag}
   ]
 })
