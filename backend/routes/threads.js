@@ -3,6 +3,7 @@ const router = express.Router();
 const path = require('node:path');
 const User = require(path.join(process.cwd(), 'models', 'User'));
 const Thread = require(path.join(process.cwd(), 'models', 'Thread'));
+
 const time = new Date().toLocaleString('pl-PL', {
   day: '2-digit',
   month: 'short',
@@ -27,17 +28,20 @@ router.post('/:threadId/likes',async(req,res)=>{
     try{
         console.log(`INFO ${req.user.login} is giving thread a like ${time}`)
         const thread = await Thread.findById(req.params.threadId)
+        const likes = thread.likes
         if(thread.userLikesId.find((x) => x.toString() === req.user.id)){
             const updated = await Thread.findByIdAndUpdate(
             req.params.threadId,
             { $set: {likes: thread.likes-1, userLikesId: thread.userLikesId.filter((x) => x.toString() !== req.user.id)}},
             { new: true, runValidators: true })
+            req.app.get("io").emit("liked",{likes:updated.likes})
         }
         else{
             const updated = await Thread.findByIdAndUpdate(
             req.params.threadId,
             { $set: {likes: thread.likes+1, userLikesId: [...thread.userLikesId,req.user.id]}},
             { new: true, runValidators: true })
+            req.app.get("io").emit("liked",{likes:updated.likes})
         }
         return res.json({status:200})
     }
@@ -51,7 +55,7 @@ router.get('/:page/:limit',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is requesting root threads ${time}`)
         const {page,limit} = req.params
-        const threads = await Thread.find().skip((page-1)*limit).limit(Number(limit))
+        const threads = await Thread.find().skip((page-1)*limit).limit(Number(limit)).sort({createdAt:-1})
         const filtered = threads.filter((x) => x.parentThreadId === null)
         console.log(`INFO User ${req.user.login} was granted root threads ${time}`)
         return res.json({threads:filtered,status:200})
@@ -66,16 +70,9 @@ router.get('/:threadId/:page/:limit',async(req,res)=>{
     try{
         const {page,limit} = req.params
         const thread = await Thread.findById(req.params.threadId)
-        const childThreads = await Promise.all(thread.childThreadsId.map(async (x) => {
-            const child = await Thread.findById(x._id)
-            return{
-                _id: child._id,
-                title: child.title,
-                content: child.content
-            }
-        }))
+        const threads = await Thread.find({parentThreadId:req.params.threadId}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:-1})
         console.log(`INFO User ${req.user.login} was granted threads from ${req.params.threadId} ${time}`)
-        return res.json({threads:childThreads,thread:thread,status:200})
+        return res.json({threads:threads,thread:thread,status:200})
     }
     catch (err){
         console.log(`ERROR ${err} ${time}`)
@@ -114,9 +111,9 @@ router.delete('/:threadId',async(req,res)=>{
                     { new:true, runValidators:true}
                 )}
             }
-            const threads = await Thread.find()
+            req.app.get("io").emit("threadDeleted",{_id:threadToBeDeleted._id})
             console.log(`INFO User ${req.user.login} successfully deleted thread ${req.params.threadId} ${time}`)
-            return res.json({threads:threads,status:200})
+            return res.json({status:200})
     }
     catch(err){
         console.log(`ERROR ${err} ${time}`)
@@ -130,6 +127,7 @@ router.post('/',async(req,res)=>{
         await newThread.save()
         const threads = await Thread.find()
         console.log(`INFO User ${req.user.login} successfully added a root thread ${time}`)
+        req.app.get("io").emit("threadAdded",newThread)
         return res.json({threads:threads,status:200})
     }
     catch(err){
@@ -144,6 +142,7 @@ router.post('/:threadId',async(req,res)=>{
         if(!parentThread.blockedId.includes(req.user.id) && !parentThread.isClosed){
             const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false})
             await newThread.save()
+            req.app.get("io").emit("subthreadAdded",newThread)
             const authors = parentThread.threadAuthors
             if(!authors.find((x) => x.id.toString() === req.user.id)){
                 const user = await User.findById(req.user.id)
@@ -167,15 +166,35 @@ router.post('/:threadId/block/:userId',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to block user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
         const thread = await Thread.findById(req.params.threadId)
+        const stack = []
+        async function getChildren(thread){
+            if(thread.childThreadsId.length === 0){
+                stack.push(thread._id)
+            }
+            else{
+                for(let i=0;i<thread.childThreadsId.length;i++){
+                    const child = await Thread.findById(thread.childThreadsId[i])
+                    await getChildren(child)
+                    stack.push(child._id)
+                }
+            }
+        }
+        await getChildren(thread)
+        for(let i=0;i<stack.length;i++){
+            await Thread.findByIdAndUpdate(stack[i],
+                { $addToSet: {blockedId:req.params.userId}},
+                { new:true, runValidators:true})
+        }
+
         const blocked = thread.blockedId
         if(!blocked.includes(req.params.userId)){
-            blocked.push(req.params.userId)
+            const updated = await Thread.findByIdAndUpdate(
+                req.params.threadId,
+                { $set: {blockedId:[...blocked,req.params.userId]}},
+                { new:true, runValidators:true}
+            )
         }
-        const updated = await Thread.findByIdAndUpdate(
-            req.params.threadId,
-            { $set: {blockedId:blocked}},
-            { new:true, runValidators:true}
-        )
+        req.app.get('io').emit('blockedUser',req.params.userId)
         console.log(`INFO User ${req.user.login} successfully blocked user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
         return res.json({status:200})
     }

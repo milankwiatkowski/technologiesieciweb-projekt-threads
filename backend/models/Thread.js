@@ -14,6 +14,6 @@ const threadSchema = new Schema({
     blockedId : [Schema.Types.ObjectId],
     tags:[String],
     isClosed:Boolean
-});
+},{timestamps:true});
 
 module.exports = model('Thread', threadSchema);

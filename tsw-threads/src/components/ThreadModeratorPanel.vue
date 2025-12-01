@@ -2,14 +2,20 @@
 import {onMounted, ref,watch} from "vue"
 import {useRoute} from "vue-router"
 import axios from "axios"
-
+import {io} from "socket.io-client"
+const socket = io("http://localhost:3000",{withCredentials:true})
 const route = useRoute()
 
 const threadId = route.params.threadId
 const thread = ref({})
 const me = ref({})
-
-
+const blockedUsersId = ref([])
+socket.on('blockedUser',(id)=>{
+    blockedUsersId.value.unshift(id)
+})
+socket.on('unblockedUser',(id)=>{
+    blockedUsersId.value = blockedUsersId.value.filter((x)=> x !== id)
+})
 async function getMyData(){
     const fetch = axios.get('http://localhost:3000/auth/me',{withCredentials:true}).then((res)=>[
         me.value = res.data.user,
@@ -18,9 +24,10 @@ async function getMyData(){
     })
 }
 
-async function getAuthors(){
+async function getThread(){
     const fetch = axios.get(`http://localhost:3000/threads/${threadId}/${1}/${10}`,{withCredentials:true}).then((res)=>{
         thread.value = res.data.thread
+        blockedUsersId.value = res.data.thread.blockedId
     }).catch((err)=>{
         console.log(err)
     })
@@ -45,7 +52,7 @@ async function takeMod(id){
 
 onMounted(()=>{
     getMyData()
-    getAuthors()
+    getThread()
 })
 
 
@@ -57,7 +64,7 @@ onMounted(()=>{
         <li v-for="author in thread.threadAuthors":key="author.id">
             {{ author.login }}
             {{ author.id }}
-            <button v-if="!thread.blockedId.includes(author.id)" @click="blockUser(author.id)">Block this user in this Thread</button>
+            <button v-if="!blockedUsersId.includes(author.id)" @click="blockUser(author.id)">Block this user in this Thread</button>
             <button v-if="!thread.modsThreadId.includes(author.id)" @click="giveMod(author.id)">Give mod to this user in this Thread</button>
             <button v-if="thread.modsThreadId.includes(author.id)" @click="takeMod(author.id)">Take mod from this user in this Thread</button>
         </li>

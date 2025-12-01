@@ -2,7 +2,8 @@
 import {ref, onMounted} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
-
+import {io} from "socket.io-client"
+const socket = io("http://localhost:3000",{withCredentials:true})
 const router = useRouter()
 
 const threads = ref([])
@@ -11,10 +12,22 @@ const content = ref('')
 
 const lastPage = ref(Number(localStorage.getItem("lastRootPage")) || 1)
 
+socket.on("threadAdded",(thread)=>{
+    if(lastPage.value==1 && threads.value.length<5){
+      threads.value.unshift(thread)
+    }
+    else if(lastPage.value==1){
+      threads.value.pop()
+      threads.value.unshift(thread)
+    }
+})
+socket.on("threadDeleted",(object)=>{
+  threads.value = threads.value.filter((x)=>x._id !== object._id)
+})
+
 async function getThreads(page){
-    const fetch = axios.get(`http://localhost:3000/threads/${page}/${10}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`http://localhost:3000/threads/${page}/${5}`,{withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
-        console.log(threads.value)
     }).catch((err)=>{
         console.log(err)
     })
@@ -27,7 +40,7 @@ async function getThreadDetails(id){
 async function deleteThread(id){
     const fetch = axios.delete(`http://localhost:3000/threads/${id}`,{
         withCredentials:true}).then((res)=>{
-        getThreads()
+        getThreads(lastPage.value)
     }).catch((err)=>{
         console.log(err)
     })
@@ -37,9 +50,7 @@ async function addThread(){
     const fetch = axios.post('http://localhost:3000/threads/',{
         title: title.value,
         content: content.value},
-        {withCredentials:true}).then((res)=>{
-        threads.value = res.data.threads
-    }).catch((err)=>{
+        {withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
@@ -83,8 +94,8 @@ onMounted(()=>{
     <p v-else>Loading...</p>
 
     <div class="pagination">
-      <button @click="prevPage()">Previous page</button>
-      <button @click="nextPage()">Next page</button>
+      <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
+      <button v-if="threads.length !== 0" @click="nextPage()">Next page</button>
     </div>
 
     <div class="form-wrapper">

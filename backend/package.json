@@ -1,21 +1,11 @@
 {
-  "name": "mongoose_project",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build-css": "sass public/css:public/css --watch"
-  },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
+    "socket.io": "^4.8.1",
     "axios": "^1.13.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^8.6.0",
-    "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
     "fs": "0.0.1-security",
@@ -24,8 +14,17 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
-    "sass": "^1.94.0",
-    "vue": "^3.5.25",
-    "vue-router": "^4.6.3"
-  }
+    "sass": "^1.94.0"
+  },
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

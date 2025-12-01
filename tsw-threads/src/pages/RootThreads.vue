@@ -5,7 +5,6 @@ import Navbar from "../components/Navbar.vue"
 
 <template>
     <div>
-        <Navbar/>
         <RootThreads/>
     </div>
 </template>
