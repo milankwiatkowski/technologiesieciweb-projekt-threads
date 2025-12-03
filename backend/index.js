@@ -4,7 +4,7 @@ const path = require('node:path');
 const cors = require('cors')
 const session = require('express-session')
 const cookieParser = require("cookie-parser");
-const {isAuthenticated} = require('./routes/middleware')
+const {isAuthenticated, isAcceptedByAdmin} = require('./routes/middleware')
 const passport = require('passport')
 const {Server} = require("socket.io")
 const http = require("http")
@@ -35,15 +35,15 @@ app.use(passport.session());
 const users = require(path.join(process.cwd(), 'routes','users'));
 const auth = require(path.join(process.cwd(), 'routes','auth'));
 const threads = require(path.join(process.cwd(), 'routes','threads'));
-app.use('/users',isAuthenticated, users);
+app.use('/users',isAuthenticated,isAcceptedByAdmin, users);
 app.use('/auth', auth);
-app.use('/threads',isAuthenticated, threads)
+app.use('/threads',isAuthenticated,isAcceptedByAdmin, threads)
 
 // Wczytujemy ewentualne dane konfiguracyjne z pliku „.env”
 const dbConnData = {
-    host: process.env.MONGO_HOST || '127.0.0.1',
+    host: process.env.MONGO_HOST || mongo,
     port: process.env.MONGO_PORT || 27017,
-    database: process.env.MONGO_DATABASE || 'lab05'
+    database: process.env.MONGO_DATABASE || 'appdb'
 };
 io.on("connection",(socket)=>{
     console.log("user connected")
@@ -57,7 +57,7 @@ mongoose
     .then(response => {
         console.log(`Połączono z MongoDB – baza: "${response.connections[0].name}"`)
         const apiPort = process.env.PORT || 3000
-        const apiHost = process.env.API_HOST || 'localhost';
+        const apiHost = process.env.API_HOST || 'host';
         server.listen(apiPort, () => console.log("Server running"));
     })
     .catch(error => {

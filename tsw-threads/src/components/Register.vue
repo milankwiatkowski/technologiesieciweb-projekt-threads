@@ -16,7 +16,7 @@ const email = ref('')
 
 async function sendRegister(){
     if(password.value===repeatedpassword.value){
-        const fetch = await axios.post('http://localhost:3000/auth/register',{
+        const fetch = await axios.post('http://backend:3000/auth/register',{
             password:password.value,
             login:login.value,
             email:email.value
@@ -46,7 +46,30 @@ async function sendRegister(){
 </template>
 
 <style scoped>
-.read-the-docs {
-  color: #888;
+button {
+  background: #333;
+  border: none;
+  padding: 8px 14px;
+  color: #eee;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: 0.2s;
+}
+button:hover {
+  background: #444;
+}
+input {
+  padding: 8px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #eee;
+  flex: 1;
+}
+
+input:focus {
+  outline: none;
+  border-color: #666;
 }
 </style>

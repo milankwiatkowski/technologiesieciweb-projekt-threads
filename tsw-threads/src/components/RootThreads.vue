@@ -3,7 +3,7 @@ import {ref, onMounted} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
-const socket = io("http://localhost:3000",{withCredentials:true})
+const socket = io("http://backend:3000",{withCredentials:true})
 const router = useRouter()
 
 const threads = ref([])
@@ -12,6 +12,7 @@ const content = ref('')
 const tags = ref('')
 const me = ref({})
 const lastPage = ref(Number(localStorage.getItem("lastRootPage")) || 1)
+const adminMessages = ref([])
 
 socket.on("threadAdded",(thread)=>{
     if(lastPage.value==1 && threads.value.length<5){
@@ -25,9 +26,18 @@ socket.on("threadAdded",(thread)=>{
 socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
 })
+socket.on('adminMessage',(info)=>{
+  if(adminMessages.value>5){
+    adminMessages.value.pop()
+    adminMessages.value.unshift(info)
+  }
+  else{
+    adminMessages.value.unshift(info)
+  }
+})
 
-function getMyData(){
-    const fetch = axios.get("http://localhost:3000/auth/me",{withCredentials:true}).then((res)=>{
+async function getMyData(){
+    const fetch = axios.get("http://backend:3000/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)
@@ -35,7 +45,7 @@ function getMyData(){
 }
 
 async function getThreads(page){
-    const fetch = axios.get(`http://localhost:3000/threads/${page}/${5}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`http://backend:3000/threads/${page}/${5}`,{withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
     }).catch((err)=>{
         console.log(err)
@@ -47,7 +57,7 @@ async function getThreadDetails(id){
 }
 
 async function deleteThread(id){
-    const fetch = axios.delete(`http://localhost:3000/threads/${id}`,{
+    const fetch = axios.delete(`http://backend:3000/threads/${id}`,{
         withCredentials:true}).then((res)=>{
         getThreads(lastPage.value)
     }).catch((err)=>{
@@ -56,7 +66,7 @@ async function deleteThread(id){
 }
 
 async function addThread(){
-    const fetch = axios.post('http://localhost:3000/threads/',{
+    const fetch = axios.post('http://backend:3000/threads/',{
         title: title.value,
         content: content.value,
         tags: tags.value},
@@ -78,15 +88,17 @@ async function prevPage(){
         getThreads(lastPage.value)
     }
 }
-
+// async function deleteMany(){
+//   const fetch = axios.post('http://backend:3000/threads/deletemany',{},{withCredentials:true}).catch((err)=>{console.log(err)})
+// }
 onMounted(()=>{
     getThreads(lastPage.value)
     getMyData()
 })
 </script>
 <template>
+  <!-- <button v-if="me.isAdmin" @click="deleteMany()">Delete all threads</button> -->
   <div class="container">
-
     <ul v-if="threads && threads.length > 0">
       <li v-for="thread in threads" :key="thread._id">
         <div class="thread-text">

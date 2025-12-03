@@ -15,14 +15,14 @@ function goToRootPage(){
   router.push('/threads')
 }
 function logout(){
-    const fetch = axios.post("http://localhost:3000/auth/logout").then(()=>{
+    const fetch = axios.post("http://backend:3000/auth/logout").then(()=>{
         router.push("/")
     }).catch((err)=>{
         console.log(err)
     })
 }
 function search(){
-  const fetch = axios.get(`http://localhost:3000/threads/find/${tag.value}`,{withCredentials:true}).then(()=>{
+  const fetch = axios.get(`http://backend:3000/threads/find/${tag.value}`,{withCredentials:true}).then(()=>{
     router.push(`/searched/${tag.value}`)
   }).catch((err)=>{
     console.log(err)

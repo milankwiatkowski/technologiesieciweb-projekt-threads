@@ -7,6 +7,7 @@ import RootThreads from './pages/RootThreads.vue'
 import Users from './pages/Users.vue'
 import ChildThreadsPage from './pages/ChildThreadsPage.vue'
 import FoundByTag from './components/FoundByTag.vue'
+import WaitingRoom from './components/WaitingRoom.vue'
 
 export default createRouter({
   history: createWebHistory(),
@@ -18,6 +19,7 @@ export default createRouter({
     { path: '/threads', component: RootThreads },
     { path: '/modpanel/:threadId', component: ThreadModeratorPanel },
     { path: '/users', component: Users },
-    { path: '/searched/:tag', component:FoundByTag}
+    { path: '/searched/:tag', component:FoundByTag},
+    { path: '/waitingRoom',component:WaitingRoom}
   ]
 })

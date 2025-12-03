@@ -3,7 +3,7 @@ import {ref,onMounted, watch} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
-const socket = io("http://localhost:3000",{withCredentials:true})
+const socket = io("http://backend:3000",{withCredentials:true})
 
 const route = useRoute();
 const router = useRouter()
@@ -32,7 +32,7 @@ socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
 })
 async function getThreads(page){
-    const fetch = axios.get(`http://localhost:3000/threads/find/${tag}/${page}/${4}`,{withCredentials:true}
+    const fetch = axios.get(`http://backend:3000/threads/find/${tag}/${page}/${4}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
     }).catch((err)=>{
@@ -41,7 +41,7 @@ async function getThreads(page){
 }
 
 async function deleteThread(id){
-    const fetch = axios.delete(`http://localhost:3000/threads/${id}`,{
+    const fetch = axios.delete(`http://backend:3000/threads/${id}`,{
         withCredentials:true}).catch((err)=>{
         console.log(err)
     })
@@ -66,7 +66,7 @@ async function prevPage(){
 }
 
 async function getMyData(){
-    const fetch = axios.get('http://localhost:3000/auth/me',{withCredentials:true}).then((res)=>{
+    const fetch = axios.get('http://backend:3000/auth/me',{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
         console.log(err)

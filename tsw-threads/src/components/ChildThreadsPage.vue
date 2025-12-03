@@ -1,13 +1,13 @@
 <script setup>
-import {ref,onMounted, watch} from "vue"
+import {ref,onMounted, watch, computed} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
-const socket = io("http://localhost:3000",{withCredentials:true})
+
+const socket = io("http://backend:3000",{withCredentials:true})
 
 const route = useRoute();
 const router = useRouter()
-
 const threads = ref([])
 const threadId = route.params.threadId
 const title = ref('')
@@ -18,7 +18,15 @@ const thread = ref({})
 const lastPage = ref(Number(localStorage.getItem("lastPage")) || 1)
 const tags = ref('')
 const isEditing = ref(false)
-
+const blockedUsersId = ref([])
+socket.on('blockedUser',(id)=>{
+    blockedUsersId.value.unshift(id)
+    console.log(blockedUsersId.value)
+})
+socket.on('unblockedUser',(id)=>{
+    blockedUsersId.value = blockedUsersId.value.filter((x)=> x !== id)
+    console.log(blockedUsersId.value)
+})
 socket.on("subthreadAdded",(subthread)=>{
     if(lastPage.value==1 && threads.value.length<4){
       threads.value.unshift(subthread)
@@ -35,18 +43,19 @@ socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
 })
 async function getThreads(page){
-    const fetch = axios.get(`http://localhost:3000/threads/${threadId}/${page}/${4}`,{withCredentials:true}
+    const fetch = axios.get(`http://backend:3000/threads/${threadId}/${page}/${4}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
         thread.value = res.data.thread
-        console.log(thread.value)
+        blockedUsersId.value = thread.value.blockedId
+        console.log(thread.value.blockedId)
     }).catch((err)=>{
             console.log(err)
     })
 }
 
 async function addThread(){
-    const fetch = axios.post(`http://localhost:3000/threads/${threadId}`,{
+    const fetch = axios.post(`http://backend:3000/threads/${threadId}`,{
         title: title.value, content: content.value,tags:tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
@@ -54,16 +63,18 @@ async function addThread(){
 }
 
 async function deleteThread(id){
-    const fetch = axios.delete(`http://localhost:3000/threads/${id}`,{
+    const fetch = axios.delete(`http://backend:3000/threads/${id}`,{
         withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 
-async function gotoThread(id){
+async function goToThread(id){
     router.push(`/thread/${id}`)
 }
-
+async function goToRoot(){
+  router.push(`/threads`)
+}
 async function goToModpanel(threadId){
     router.push(`/modpanel/${threadId}`)
 }
@@ -83,36 +94,42 @@ async function prevPage(){
 }
 
 async function getMyData(){
-    const fetch = axios.get('http://localhost:3000/auth/me',{withCredentials:true}).then((res)=>{
+    const fetch = axios.get('http://backend:3000/auth/me',{withCredentials:true}).then((res)=>{
         me.value = res.data.user
+        console.log(me.value._id)
     }).catch((err)=>{
         console.log(err)
     })
 }
 async function close(){
-    const fetch = axios.post(`http://localhost:3000/threads/close/${threadId}`,{},{withCredentials:true}).then(()=>{
+    const fetch = axios.post(`http://backend:3000/threads/close/${threadId}`,{},{withCredentials:true}).then(()=>{
         getThreads(lastPage.value)
     }).catch((err)=>{
         console.log(err)
     })
 }
 async function getLikes(){
-    const fetch = axios.get(`http://localhost:3000/threads/${threadId}/likes`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`http://backend:3000/threads/${threadId}/likes`,{withCredentials:true}).then((res)=>{
         likes.value = res.data.likes
     }).catch((err)=>{
         console.log(err)
     })
 }
 async function like(){
-    const fetch = axios.post(`http://localhost:3000/threads/${threadId}/likes`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`http://backend:3000/threads/${threadId}/likes`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 function setEditing(){
   isEditing.value = true
 }
+async function hide(id){
+  const fetch = axios.post(`http://backend:3000/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
+    console.log(err)
+  })
+}
 async function editThread(id){
-    const fetch = axios.post(`http://localhost:3000/threads/edit/${id}`,{
+    const fetch = axios.post(`http://backend:3000/threads/edit/${id}`,{
         title: title.value,
         content: content.value,
         tags: tags.value},
@@ -143,17 +160,22 @@ watch(
       <li v-for="thread2 in threads" :key="thread2._id">
         <span>{{ thread2.title }}</span>
         <span v-if="!isEditing">
-          <button @click="deleteThread(thread2._id)">Delete</button>
-          <button @click="gotoThread(thread2._id)">See more</button>
+          <button v-if="!blockedUsersId.includes(me._id)" @click="deleteThread(thread2._id)">Delete</button>
+          <button @click="goToThread(thread2._id)">See more</button>
+          <button @click="hide(thread2._id)">Hide thread</button>
         </span>
       </li>
     </ul>
+    <div v-if="!isEditing">
+      <button v-if="thread.parentThreadId === null" @click="goToRoot()">Go to previous thread</button>
+      <button v-else @click="goToThread(thread.parentThreadId)">Go to previous thread</button>
+    </div>
     <button v-if="!thread.isClosed && (me.isAdmin || thread.creatorId == me._id || (thread.modsThreadId || []).includes(me._id)) && !isEditing" @click="close()">Close thread</button>
     <button v-if="thread.isClosed && (me.isAdmin || thread.creatorId == me._id || (thread.modsThreadId || []).includes(me._id)) && !isEditing" @click="close()">Reopen thread</button>
 
     <div class="thread-info" v-if="!isEditing">
       <p><strong>Likes:</strong> {{ likes }}</p>
-      <p><strong>Content:</strong> {{ thread.content }}</p>
+      <p><strong>{{ thread.content }}</strong></p>
       <p><strong>Tags: {{ thread.tags }}</strong></p>
       <button @click="like()">Like</button>
       <button v-if="me.isAdmin || thread.creatorId === me._id" @click="setEditing()">Edit</button>
@@ -164,7 +186,7 @@ watch(
       <button @click="prevPage()">Previous</button>
       <button @click="nextPage()">Next</button>
     </div>
-    <div v-if="!thread.isClosed && !(thread.blockedId || []).includes(me._id) && !isEditing">
+    <div v-if="!thread.isClosed && !blockedUsersId.includes(me._id) && !isEditing">
       <form @submit.prevent="addThread">
         <input v-model="title" placeholder="Add title" required />
         <input v-model="content" placeholder="Add content" required />
@@ -172,7 +194,7 @@ watch(
         <button>Add thread</button>
       </form>
     </div>
-    <div v-else>
+    <div v-if="isEditing && (me.isAdmin || thread.creatorId === me._id)">
       <form @submit="editThread(thread._id)">
         <div><strong>Current title:</strong> {{ thread.title }}
         <input v-model="title" placeholder="Change title"  /></div>

@@ -8,7 +8,8 @@ const userSchema = new Schema({
     registrationDate: Date,
     password: Buffer,
     salt: Buffer,
-    modOfThreadsId:[Schema.Types.ObjectId]
+    modOfThreadsId:[Schema.Types.ObjectId],
+    isAcceptedByAdmin: Boolean
 });
 
 module.exports = model('User', userSchema);

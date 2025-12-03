@@ -3,7 +3,7 @@ import {onMounted, ref} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
-const socket = io("http://localhost:3000",{withCredentials:true})
+const socket = io("http://backend:3000",{withCredentials:true})
 
 const router = useRouter()
 
@@ -11,31 +11,20 @@ const me = ref({})
 const login = ref('')
 const password = ref('')
 const repeatedPassword = ref('')
-const email = ref('')
 
 socket.on('user',(user)=>{
     me.value = user
 })
 
 function getMyData(){
-    const fetch = axios.get("http://localhost:3000/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("http://backend:3000/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)
     })
 }
-function patchLogin(){
-    axios.post(`http://localhost:3000/users/patch/${me.value._id}`,{login:login.value},{withCredentials:true}).catch((err)=>{
-        console.log(err)
-    })
-}
-function patchEmail(){
-    axios.post(`http://localhost:3000/users/patch/${me.value._id}`,{email:email.value},{withCredentials:true}).catch((err)=>{
-        console.log(err)
-    })
-}
 function patchPassword(){
-    axios.post(`http://localhost:3000/users/patch/${me.value._id}`,{password:password.value,repeatedPassword:repeatedPassword.value},{withCredentials:true}).catch((err)=>{
+    axios.post(`http://backend:3000/users/patch/${me.value._id}`,{password:password.value,repeatedPassword:repeatedPassword.value},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
@@ -56,18 +45,38 @@ onMounted(()=>{
         <button v-if="me.isAdmin" @click="seeAllUsers()">See all users</button>
     </ul>
     <div v-if="me && me._id">
-    <form @submit.prevent="patchLogin">
-        <input v-model="login" placeholder="Your login" required/>
-        <button>Change your login</button>
-    </form>
         <form @submit.prevent="patchPassword">
         <input v-model="password" type="password" placeholder="Your password" required/>
         <input v-model="repeatedPassword" type="password" placeholder="Repeat your password" required/>
         <button>Change your password</button>
     </form>
-        <form @submit.prevent="patchEmail">
-        <input v-model="email" placeholder="Your email" required/>
-        <button>Change your email address</button>
-    </form>
     </div>
 </template>
+<style scoped>
+button {
+  background: #333;
+  border: none;
+  padding: 8px 14px;
+  color: #eee;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: 0.2s;
+}
+button:hover {
+  background: #444;
+}
+input {
+  padding: 8px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #eee;
+  flex: 1;
+}
+
+input:focus {
+  outline: none;
+  border-color: #666;
+}
+</style>

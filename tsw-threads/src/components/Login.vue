@@ -13,15 +13,15 @@ const login = ref('')
 const password = ref('')
 
 async function sendLogin(){
-    const fetch = await axios.post('http://localhost:3000/auth/login',{
-            password:password.value,
-            login:login.value},
-            {withCredentials:true}).then((res)=>{
-            if(res.status===200){
-                router.push("/threads")
-            }
+    const fetch = await axios.post('http://backend:3000/auth/login',{
+        password:password.value,
+        login:login.value},
+        {withCredentials:true}).then((res)=>{
+            console.log(res)
+            router.push("/threads")
         }).catch((err)=>{
             console.log(err)
+            router.push('/waitingRoom')
         })
 }
 function goToRegister(){
@@ -40,7 +40,30 @@ function goToRegister(){
 </template>
 
 <style scoped>
-.read-the-docs {
-  color: #888;
+button {
+  background: #333;
+  border: none;
+  padding: 8px 14px;
+  color: #eee;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: 0.2s;
+}
+button:hover {
+  background: #444;
+}
+input {
+  padding: 8px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #eee;
+  flex: 1;
+}
+
+input:focus {
+  outline: none;
+  border-color: #666;
 }
 </style>

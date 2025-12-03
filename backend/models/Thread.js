@@ -13,7 +13,8 @@ const threadSchema = new Schema({
     likes:Number,
     blockedId : [Schema.Types.ObjectId],
     tags:[String],
-    isClosed:Boolean
+    isClosed:Boolean,
+    isHidden:Boolean
 },{timestamps:true});
 
 module.exports = model('Thread', threadSchema);

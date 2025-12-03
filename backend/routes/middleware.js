@@ -9,15 +9,21 @@ const time = new Date().toLocaleString('pl-PL', {
   second: '2-digit'
 });
 const isAdmin = (req, res, next) => {
-  try{
     if (req.user && req.user.isAdmin === true) {
         return next();
     }
-    console.log(`INFO User was denied due to the lack of access ${time}`)
-    return res.status(403).send("Access denied (Admins only)");
-  }
-  catch(err){
-    console.log(`ERROR ${err} ${time}`)
-  }
+    else{
+      console.log(`INFO User was denied due to the lack of access ${time}`)
+      return res.status(403).send("Access denied (Admins only)");
+    }
 };
-module.exports = { isAuthenticated, isAdmin };
+const isAcceptedByAdmin = (req,res,next) =>{
+    if(req.user && req.user.isAcceptedByAdmin===true){
+      return next()
+    }
+    else{
+      console.log(`ERROR ${err} ${time}`)
+      return res.status(403).send("You are not an accepted user!");
+    }
+}
+module.exports = { isAuthenticated, isAdmin, isAcceptedByAdmin };

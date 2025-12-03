@@ -104,5 +104,29 @@ router.post('/patch/:idUser', async (req, res) => {
         return res.json({status:400})
     }
 });
-
+router.get(`/toBeAccepted`,isAdmin, async (req, res,next) => {
+    console.log(`INFO Admin ${req.user.login} is requesting users to be accepted ${time}`)
+    try{
+        const users = await User.find({isAcceptedByAdmin:false,isAdmin:false})
+        return res.json({users:users,status:200})
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
+        next(err)
+    }
+});
+router.post(`/toBeAccepted/:id`,isAdmin, async (req, res,next) => {
+    console.log(`INFO Admin ${req.user.login} is accepting user ${req.params.id} ${time}`)
+    try{
+        const user = await User.findByIdAndUpdate(req.params.id,
+            { $set: {isAcceptedByAdmin:true}},
+            { new:true, runValidators:true})
+        req.app.get('io').emit('userAccepted',user)
+        return res.json({user:user,status:200})
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
+        next(err)
+    }
+});
 module.exports = router;

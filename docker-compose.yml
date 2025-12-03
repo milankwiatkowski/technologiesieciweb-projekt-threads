@@ -1,0 +1,39 @@
+services:
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGO_URL=mongodb://mongo:27017/appdb
+    volumes:
+      - ./backend:/app
+    networks:
+      - appnet
+
+  frontend:
+    build: ./tsw-threads
+    container_name: frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - appnet
+
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    environment:
+      - MONGO_INITDB_DATABASE=appdb
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - appnet
+    
+networks:
+  appnet:
+
+volumes:
+  mongo-data:
