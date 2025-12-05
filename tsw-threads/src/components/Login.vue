@@ -13,7 +13,7 @@ const login = ref('')
 const password = ref('')
 
 async function sendLogin(){
-    const fetch = await axios.post('http://backend:3000/auth/login',{
+    const fetch = await axios.post('https://localhost/api/auth/login',{
         password:password.value,
         login:login.value},
         {withCredentials:true}).then((res)=>{

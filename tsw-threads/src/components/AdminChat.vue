@@ -2,7 +2,7 @@
 import axios from "axios"
 import {io} from "socket.io-client"
 import { ref,onMounted } from "vue"
-const socket = io("http://backend:3000",{withCredentials:true})
+const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 const me = ref({})
 const adminMessages = ref([])
 
@@ -17,7 +17,7 @@ socket.on('adminMessage',(info)=>{
 })
 
 async function getMyData(){
-    const fetch = axios.get("http://backend:3000/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)

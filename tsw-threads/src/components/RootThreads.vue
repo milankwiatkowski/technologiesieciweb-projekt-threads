@@ -3,7 +3,7 @@ import {ref, onMounted} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
-const socket = io("http://backend:3000",{withCredentials:true})
+const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 const router = useRouter()
 
 const threads = ref([])
@@ -37,7 +37,7 @@ socket.on('adminMessage',(info)=>{
 })
 
 async function getMyData(){
-    const fetch = axios.get("http://backend:3000/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)
@@ -45,7 +45,7 @@ async function getMyData(){
 }
 
 async function getThreads(page){
-    const fetch = axios.get(`http://backend:3000/threads/${page}/${5}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/threads/${page}/${5}`,{withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
     }).catch((err)=>{
         console.log(err)
@@ -57,7 +57,7 @@ async function getThreadDetails(id){
 }
 
 async function deleteThread(id){
-    const fetch = axios.delete(`http://backend:3000/threads/${id}`,{
+    const fetch = axios.delete(`https://localhost/api/threads/${id}`,{
         withCredentials:true}).then((res)=>{
         getThreads(lastPage.value)
     }).catch((err)=>{
@@ -66,7 +66,7 @@ async function deleteThread(id){
 }
 
 async function addThread(){
-    const fetch = axios.post('http://backend:3000/threads/',{
+    const fetch = axios.post('https://localhost/api/threads/',{
         title: title.value,
         content: content.value,
         tags: tags.value},
@@ -89,7 +89,7 @@ async function prevPage(){
     }
 }
 // async function deleteMany(){
-//   const fetch = axios.post('http://backend:3000/threads/deletemany',{},{withCredentials:true}).catch((err)=>{console.log(err)})
+//   const fetch = axios.post('https://localhost:3000/threads/deletemany',{},{withCredentials:true}).catch((err)=>{console.log(err)})
 // }
 onMounted(()=>{
     getThreads(lastPage.value)

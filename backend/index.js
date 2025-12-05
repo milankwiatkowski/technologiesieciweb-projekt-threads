@@ -9,29 +9,23 @@ const passport = require('passport')
 const {Server} = require("socket.io")
 const http = require("http")
 require('dotenv').config();
+app.use(cookieParser());
+app.use(cors({
+    origin:"https://localhost",
+    credentials:true
+}))
 const server = http.createServer(app)
 const io = new Server(server,{
     cors:{
-        origin:"http://localhost:5173",
+        origin:"https://localhost",
         credentials:true
     }
 })
 app.set('io',io)
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors({
-    origin:"http://localhost:5173",
-    credentials:true
-}))
-app.use(cookieParser());
-app.use(session({
-    secret: process.env.SECRET || 'hasło szyfrujące',
-    resave: false,
-    saveUninitialized: false
-}));
-
+app.set("trust proxy", 1);
 app.use(passport.initialize());
-app.use(passport.session());
 const users = require(path.join(process.cwd(), 'routes','users'));
 const auth = require(path.join(process.cwd(), 'routes','auth'));
 const threads = require(path.join(process.cwd(), 'routes','threads'));
@@ -41,8 +35,8 @@ app.use('/threads',isAuthenticated,isAcceptedByAdmin, threads)
 
 // Wczytujemy ewentualne dane konfiguracyjne z pliku „.env”
 const dbConnData = {
-    host: process.env.MONGO_HOST || mongo,
-    port: process.env.MONGO_PORT || 27017,
+    host: process.env.MONGO_HOST || "mongo",
+    port: parseInt(process.env.MONGO_PORT) || 27017,
     database: process.env.MONGO_DATABASE || 'appdb'
 };
 io.on("connection",(socket)=>{
@@ -58,7 +52,7 @@ mongoose
         console.log(`Połączono z MongoDB – baza: "${response.connections[0].name}"`)
         const apiPort = process.env.PORT || 3000
         const apiHost = process.env.API_HOST || 'host';
-        server.listen(apiPort, () => console.log("Server running"));
+        server.listen(apiPort,"0.0.0.0", () => console.log("Server running"));
     })
     .catch(error => {
         console.error('Błąd połączenia z serwerem MongoDB', error)

@@ -3,7 +3,7 @@ import {onMounted, ref} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
-const socket = io("http://backend:3000",{withCredentials:true})
+const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 
 const router = useRouter()
 
@@ -17,14 +17,14 @@ socket.on('user',(user)=>{
 })
 
 function getMyData(){
-    const fetch = axios.get("http://backend:3000/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)
     })
 }
 function patchPassword(){
-    axios.post(`http://backend:3000/users/patch/${me.value._id}`,{password:password.value,repeatedPassword:repeatedPassword.value},{withCredentials:true}).catch((err)=>{
+    axios.post(`https://localhost/api/users/patch/${me.value._id}`,{password:password.value,repeatedPassword:repeatedPassword.value},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }

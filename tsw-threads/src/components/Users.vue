@@ -3,7 +3,7 @@ import {onMounted, ref} from 'vue'
 import axios from 'axios'
 import {useRouter} from 'vue-router'
 import {io} from "socket.io-client"
-const socket = io("http://backend:3000",{withCredentials:true})
+const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 
 const router = useRouter()
 
@@ -18,7 +18,7 @@ socket.on('addUserToBeAccepted',(user)=>{
     usersToBeAccepted.value.push(user)
 })
 async function getUsers(){
-    const fetch = axios.get('http://backend:3000/users',{withCredentials:true}).then((res)=>{
+    const fetch = axios.get('https://localhost/api/users',{withCredentials:true}).then((res)=>{
         users.value = res.data.users
         usersToShow.value = res.data.users.filter((x) => x.isAcceptedByAdmin === true)
     }).catch((err)=>{
@@ -27,20 +27,20 @@ async function getUsers(){
 }
 
 async function deleteUser(id){
-    const fetch = axios.delete(`http://backend:3000/users/${id}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.delete(`https://localhost/api/users/${id}`,{withCredentials:true}).then((res)=>{
         getUsers()
     }).catch((err)=>{
             console.log(err)
     })
 }
 async function getUsersToBeAccepted(){
-    const fetch = axios.get(`http://backend:3000/users/toBeAccepted`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/users/toBeAccepted`,{withCredentials:true}).then((res)=>{
         usersToBeAccepted.value = res.data.users}).catch((err)=>{
             console.log(err)
     })
 }
 async function acceptUser(id){
-    const fetch = axios.post(`http://backend:3000/users/toBeAccepted/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`https://localhost/api/users/toBeAccepted/${id}`,{},{withCredentials:true}).catch((err)=>{
             console.log(err)
     })
 }

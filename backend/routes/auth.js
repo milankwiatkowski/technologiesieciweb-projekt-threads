@@ -3,12 +3,12 @@ const express = require('express');
 const crypto = require('node:crypto')
 const HASH_FUNCTION = process.env.HASH || 'sha256'
 const SALT_BITS = process.env.SALT_BITS || 16
+const SECRET = process.env.SECRET || 'secret';
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const path = require('node:path');
 const User = require(path.join(process.cwd(), 'models', 'User'));
 const { Strategy } = require('passport-jwt');
-const SECRET = process.env.SECRET || 'secret';
 const {isAuthenticated,isAdmin} = require('./middleware')
 const cookieExtractor = req => {
     if (req && req.cookies) {
@@ -51,7 +51,7 @@ router.post('/login', async (req, res,next) => {
                     id: user._id,isAdmin:user.isAdmin,isAcceptedByAdmin:user.isAcceptedByAdmin},
                     SECRET,
                     { expiresIn: '1d' });
-                    res.cookie("jwt", accessToken, { httpOnly: true, secure:true,sameSite:"none",path:"/" });
+                    res.cookie("jwt", accessToken, { httpOnly: true, secure:true,sameSite:"none" ,maxAge: 1000 * 60 * 60 * 24});
                 console.log(`INFO User ${req.body.login} succesfully logged in ${time}`)
                 return res.json({message:"Login successful!",status:200})
             }
@@ -77,6 +77,7 @@ router.post('/register', async (req, res,next) => {
         const users = await User.find({login:req.body.login})
         if(users.length===0){
             crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
+                // const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true})
                 const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
                 if (err) { return next(err); }
                 console.log(`INFO User ${req.body.login} registered succesfully ${time}`)
@@ -111,7 +112,7 @@ router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) 
     }
 });
 router.post('/logout', (req, res, next) => {
-    res.clearCookie('jwt',{httpOnly:true,secure:true,sameSite:'none',path:'/'})
+    res.clearCookie('jwt',{httpOnly:true,secure:true,sameSite:'none'})
     res.json({status:200})
 });
 

@@ -4,7 +4,7 @@ import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
 
-const socket = io("http://backend:3000",{withCredentials:true})
+const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 
 const route = useRoute();
 const router = useRouter()
@@ -43,7 +43,7 @@ socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
 })
 async function getThreads(page){
-    const fetch = axios.get(`http://backend:3000/threads/${threadId}/${page}/${4}`,{withCredentials:true}
+    const fetch = axios.get(`https://localhost/api/threads/${threadId}/${page}/${4}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
         thread.value = res.data.thread
@@ -55,7 +55,7 @@ async function getThreads(page){
 }
 
 async function addThread(){
-    const fetch = axios.post(`http://backend:3000/threads/${threadId}`,{
+    const fetch = axios.post(`https://localhost/api/threads/${threadId}`,{
         title: title.value, content: content.value,tags:tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
@@ -63,7 +63,7 @@ async function addThread(){
 }
 
 async function deleteThread(id){
-    const fetch = axios.delete(`http://backend:3000/threads/${id}`,{
+    const fetch = axios.delete(`https://localhost/api/threads/${id}`,{
         withCredentials:true}).catch((err)=>{
         console.log(err)
     })
@@ -94,7 +94,7 @@ async function prevPage(){
 }
 
 async function getMyData(){
-    const fetch = axios.get('http://backend:3000/auth/me',{withCredentials:true}).then((res)=>{
+    const fetch = axios.get('https://localhost/api/auth/me',{withCredentials:true}).then((res)=>{
         me.value = res.data.user
         console.log(me.value._id)
     }).catch((err)=>{
@@ -102,21 +102,21 @@ async function getMyData(){
     })
 }
 async function close(){
-    const fetch = axios.post(`http://backend:3000/threads/close/${threadId}`,{},{withCredentials:true}).then(()=>{
+    const fetch = axios.post(`https://localhost/api/threads/close/${threadId}`,{},{withCredentials:true}).then(()=>{
         getThreads(lastPage.value)
     }).catch((err)=>{
         console.log(err)
     })
 }
 async function getLikes(){
-    const fetch = axios.get(`http://backend:3000/threads/${threadId}/likes`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/threads/${threadId}/likes`,{withCredentials:true}).then((res)=>{
         likes.value = res.data.likes
     }).catch((err)=>{
         console.log(err)
     })
 }
 async function like(){
-    const fetch = axios.post(`http://backend:3000/threads/${threadId}/likes`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`https://localhost/api/threads/${threadId}/likes`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
@@ -124,12 +124,12 @@ function setEditing(){
   isEditing.value = true
 }
 async function hide(id){
-  const fetch = axios.post(`http://backend:3000/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`https://localhost/api/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
 async function editThread(id){
-    const fetch = axios.post(`http://backend:3000/threads/edit/${id}`,{
+    const fetch = axios.post(`https://localhost/api/threads/edit/${id}`,{
         title: title.value,
         content: content.value,
         tags: tags.value},

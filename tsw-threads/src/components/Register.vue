@@ -16,7 +16,7 @@ const email = ref('')
 
 async function sendRegister(){
     if(password.value===repeatedpassword.value){
-        const fetch = await axios.post('http://backend:3000/auth/register',{
+        const fetch = await axios.post('https://localhost/api/auth/register',{
             password:password.value,
             login:login.value,
             email:email.value
