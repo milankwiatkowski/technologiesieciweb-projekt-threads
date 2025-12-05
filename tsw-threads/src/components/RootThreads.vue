@@ -125,9 +125,9 @@ onMounted(()=>{
       <div class="form-wrapper">
         <form @submit.prevent="addThread">
           <input v-model="title" placeholder="Add title" required />
-          <input v-model="content" placeholder="Add content" required />
+          <textarea v-model="content" placeholder="Add content" required></textarea>
           <input v-model="tags" placeholder="Add tags" required />
-          <button>Add Thread</button>
+          <button type="submit">Add Thread</button>
         </form>
       </div>
     </div>
@@ -138,7 +138,16 @@ body, * {
   font-family: Arial, sans-serif;
   color: #eee;
 }
+.thread-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
+textarea {
+  min-height: 120px;
+  white-space: pre-wrap;
+}
 .container {
   background: #1b1b1b;
   padding: 20px;
@@ -195,8 +204,8 @@ button:hover {
 
 form {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  margin-top: 15px;
 }
 
 input {

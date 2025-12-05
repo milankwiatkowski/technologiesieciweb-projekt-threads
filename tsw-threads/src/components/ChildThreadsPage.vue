@@ -3,6 +3,7 @@ import {ref,onMounted, watch, computed} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
+import HighlightedText from './HighlightedText.vue'
 
 const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 
@@ -175,7 +176,7 @@ watch(
 
     <div class="thread-info" v-if="!isEditing">
       <p><strong>Likes:</strong> {{ likes }}</p>
-      <p><strong>{{ thread.content }}</strong></p>
+      <HighlightedText :content="thread.content" />
       <p><strong>Tags: {{ thread.tags }}</strong></p>
       <button @click="like()">Like</button>
       <button v-if="me.isAdmin || thread.creatorId === me._id" @click="setEditing()">Edit</button>
@@ -199,7 +200,7 @@ watch(
         <div><strong>Current title:</strong> {{ thread.title }}
         <input v-model="title" placeholder="Change title"  /></div>
         <div><strong>Current content:</strong> {{ thread.content }}
-        <input v-model="content" placeholder="Change content" /></div>
+        <textarea v-model="content" placeholder="Change content"></textarea></div>
         <div><strong>Current tags:</strong> {{ thread.tags }}
         <input v-model="tags" placeholder="Change tags" /></div>
         <button>Submit editing</button>
