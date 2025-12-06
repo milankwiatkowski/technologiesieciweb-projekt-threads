@@ -29,6 +29,13 @@ const opts = {
   secretOrKey: SECRET,
 };
 
+// const users = await User.find()
+// if(users.length==0){
+//     crypto.pbkdf2("admin", salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
+//         const user = new User({isAdmin:true,password:hashedPassword,login:admin,email:"admin@example.com",salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true})
+//         await user.save()
+//     })
+// }
 
 passport.use(new Strategy(opts, async (payload, done) => {
     try {
@@ -77,8 +84,8 @@ router.post('/register', async (req, res,next) => {
         const users = await User.find({login:req.body.login})
         if(users.length===0){
             crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true})
-                // const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
+                // const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true})
+                const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
                 if (err) { return next(err); }
                 console.log(`INFO User ${req.body.login} registered succesfully ${time}`)
                 await user.save()

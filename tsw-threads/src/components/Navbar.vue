@@ -32,56 +32,105 @@ function search(){
 
 <template>
   <nav class="navbar">
-    <button @click="goToRootPage()" class="nav-left">My Threads</button>
+    <div class="nav-left">
+      <button @click="goToRootPage()">My Threads</button>
+    </div>
+
+    <div class="nav-center">
+      <form class="search-form" @submit.prevent="search">
+        <input v-model="tag" placeholder="Search by tag..." required />
+        <button type="submit" class="search-btn">Search</button>
+      </form>
+    </div>
 
     <div class="nav-right">
       <button @click="goToMyProfile()">Mój profil</button>
       <button @click="logout()">Wyloguj się</button>
     </div>
-    <div class="search">
-      <form @submit.prevent="search">
-        <input v-model="tag" placeholder="Search for threads by a tag" required />
-        <button>Search</button>
-      </form>
-    </div>
   </nav>
 </template>
-
 <style scoped>
+
 .navbar {
-  background: #1c1c1c;
-  padding: 12px 20px;
-  display: flex;
-  justify-content: space-between;
+  width: 100%;
+  display: grid;
+  grid-template-columns:2fr 2fr 2fr;
   align-items: center;
-  border-bottom: 1px solid #333;
+  gap: 20px;
+  padding: 14px 20px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
-input {
-  padding: 8px;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #eee;
-  flex: 1;
+
+.nav-left,
+.nav-center,
+.nav-right {
+  min-width: 0;
 }
+
+.nav-center {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.search-form {
+  max-width: 300px;
+  width: 100%;
+}
+
+.nav-right button,
 .nav-left button {
-  color: black;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  color: var(--accent);
   font-size: 1.1rem;
   font-weight: 600;
-}
-
-.nav-right button {
-  background: #333;
-  border: none;
-  padding: 8px 14px;
-  margin-left: 8px;
-  color: #eee;
-  border-radius: 4px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: opacity 0.2s;
 }
 
-.nav-right button:hover {
-  background: #444;
+
+.nav-left button:hover {
+  opacity: 0.85;
 }
+.search-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  padding: 8px 12px;
+  border-radius: 30px;
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 300px;
+}
+
+.search-form input {
+  flex: 1;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+}
+
+.search-form input:focus {
+  outline: none;
+}
+
+.search-btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-btn:hover {
+  opacity: 0.85;
+}
+
 </style>

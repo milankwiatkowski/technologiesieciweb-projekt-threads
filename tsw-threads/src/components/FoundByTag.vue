@@ -90,17 +90,20 @@ watch(
 </script>
 <template>
   <div class="container">
+    <ul class="thread-list">
+      <li v-for="thread in threads" :key="thread._id" class="thread-item">
+        <div class="thread-info">
+          <div class="title">{{ thread.title }}</div>
+          <div class="likes">❤️ {{ thread.likes }}</div>
+        </div>
 
-    <ul>
-      <li v-for="thread in threads" :key="thread._id">
-        <span>{{ thread.title }}</span>
-        <span>{{ thread.likes }}</span>
-        <span>
-          <button @click="deleteThread(thread._id)">Delete</button>
-          <button @click="gotoThread(thread._id)">See more</button>
-        </span>
+        <div class="actions">
+          <button class="btn delete" @click="deleteThread(thread._id)">Delete</button>
+          <button class="btn" @click="gotoThread(thread._id)">See more</button>
+        </div>
       </li>
     </ul>
+
     <div class="pagination">
       <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
       <button v-if="threads.length !== 0" @click="nextPage()">Next page</button>
@@ -109,78 +112,100 @@ watch(
 </template>
 
 <style scoped>
-
-body, * {
-  font-family: Arial, sans-serif;
-  color: #eee;
-}
-
 .container {
-  background: #1b1b1b;
+  max-width: 800px;
+  margin: 0 auto;
   padding: 20px;
-  border-radius: 6px;
 }
 
-ul {
+.thread-list {
   list-style: none;
   padding: 0;
-  margin: 0 0 20px 0;
+  margin: 0;
 }
 
-li {
-  background: #262626;
-  padding: 10px 14px;
-  border-radius: 4px;
-  margin-bottom: 10px;
+.thread-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-.pagination {
-  margin: 15px 0;
-  display: flex;
-  gap: 10px;
-}
-
-button {
-  background: #333;
-  border: none;
-  padding: 8px 14px;
-  color: #eee;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 6px;
-  transition: 0.2s;
+  background: var(--card);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: background-color 0.2s;
 }
 
-button:hover {
-  background: #444;
-}
-
-form {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-input {
-  padding: 8px;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #eee;
-  flex: 1;
-}
-
-input:focus {
-  outline: none;
-  border-color: #666;
+.thread-item:hover {
+  background-color: #1d1d1d;
 }
 
 .thread-info {
-  margin: 15px 0;
-  background: #262626;
-  padding: 15px;
-  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.likes {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 8px 14px;
+  background: #222;
+  color: var(--text);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.btn:hover {
+  background-color: #333;
+}
+
+.delete {
+  background: #2a0000;
+  border-color: #3d0000;
+}
+
+.delete:hover {
+  background: #3d0000;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.pagination button {
+  padding: 10px 18px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 26px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.pagination button:hover {
+  opacity: 0.85;
 }
 </style>

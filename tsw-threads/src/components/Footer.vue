@@ -3,23 +3,29 @@ import AdminChat from "./AdminChat.vue";
 </script>
 
 <template>
-  <AdminChat/>
-  <footer>
-    Milan Kwiatkowski 2025
-  </footer>
+  <div class="footer-wrapper">
+    <AdminChat />
+
+    <footer class="footer">
+      Milan Kwiatkowski 2025
+    </footer>
+  </div>
 </template>
 
 <style scoped>
-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
+.footer-wrapper {
+  margin-top: 40px;
+  padding: 0 20px;
+}
+
+.footer {
   width: 100%;
-  background: #1c1c1c;
-  padding: 12px 20px;
-  color: #eee;
+  padding: 20px 0;
   text-align: center;
-  border-top: 1px solid #333;
-  z-index: 999;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--border);
+  margin-top: 30px;
 }
 </style>
+

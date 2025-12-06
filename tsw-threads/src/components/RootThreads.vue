@@ -88,6 +88,12 @@ async function prevPage(){
         getThreads(lastPage.value)
     }
 }
+
+async function hide(id){
+  const fetch = axios.post(`https://localhost/api/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
+    console.log(err)
+  })
+}
 // async function deleteMany(){
 //   const fetch = axios.post('https://localhost:3000/threads/deletemany',{},{withCredentials:true}).catch((err)=>{console.log(err)})
 // }
@@ -110,6 +116,7 @@ onMounted(()=>{
         <div class="thread-actions">
           <button @click="getThreadDetails(thread._id)">See more</button>
           <button v-if="me.isAdmin || thread.creatorId === me._id" @click="deleteThread(thread._id)">Delete</button>
+          <button class="btn" v-if="me.isAdmin" @click="hide(thread._id)">Hide thread</button>
         </div>
       </li>
     </ul>
@@ -119,7 +126,7 @@ onMounted(()=>{
     <div>
       <div class="pagination">
         <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-        <button v-if="threads.length !== 0" @click="nextPage()">Next page</button>
+        <button v-if="threads.length >5" @click="nextPage()">Next page</button>
       </div>
 
       <div class="form-wrapper">
@@ -134,91 +141,135 @@ onMounted(()=>{
   </div>
 </template>
 <style scoped>
-body, * {
-  font-family: Arial, sans-serif;
-  color: #eee;
-}
-.thread-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+
+* {
+  box-sizing: border-box;
 }
 
-textarea {
-  min-height: 120px;
-  white-space: pre-wrap;
-}
 .container {
-  background: #1b1b1b;
+  background: var(--bg);
   padding: 20px;
-  border-radius: 6px;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 ul {
   list-style: none;
+  margin: 0;
   padding: 0;
-  margin: 0 0 20px 0;
 }
 
 li {
-  background: #262626;
-  padding: 12px 14px;
-  border-radius: 4px;
-  margin-bottom: 10px;
   display: flex;
-  justify-content: space-between;
-  gap: 15px;
+  gap: 14px;
+  padding: 18px 12px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+
+li:hover {
+  background: #1d1d1d;
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #333;
+  flex-shrink: 0;
+}
+
+.thread-text {
+  flex: 1;
+}
+
+.thread-text strong {
+  font-size: 1.1rem;
+  color: var(--text);
 }
 
 .thread-text p {
-  margin: 4px 0 0 0;
-  color: #bbb;
-  font-size: 0.9rem;
+  margin: 6px 0;
+  color: var(--text-soft);
+  font-size: 0.95rem;
 }
 
 .thread-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 button {
-  background: #333;
-  border: none;
-  padding: 8px 14px;
-  color: #eee;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: 0.2s;
+  padding: 7px 14px;
+  background: #222;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.85rem;
 }
 
 button:hover {
-  background: #444;
+  background: #333;
 }
 
 .pagination {
-  margin: 15px 0;
   display: flex;
   gap: 10px;
+  margin: 20px 0;
+  justify-content: center;
+}
+
+.form-wrapper {
+  margin-top: 25px;
+  background: var(--card);
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
 }
 
 form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-input {
-  padding: 8px;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #eee;
+input, textarea {
+  width: 100%;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 0.95rem;
 }
 
-input:focus {
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+input:focus, textarea:focus {
   outline: none;
-  border-color: #666;
+  border-color: #444;
 }
+
+form button {
+  width: fit-content;
+  align-self: flex-end;
+  background: var(--accent);
+  color: #000;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-weight: 600;
+}
+
+form button:hover {
+  opacity: 0.8;
+}
+
 </style>
 

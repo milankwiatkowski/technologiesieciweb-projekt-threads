@@ -8,7 +8,6 @@ const {isAuthenticated, isAcceptedByAdmin} = require('./routes/middleware')
 const passport = require('passport')
 const {Server} = require("socket.io")
 const http = require("http")
-require('dotenv').config();
 app.use(cookieParser());
 app.use(cors({
     origin:"https://localhost",

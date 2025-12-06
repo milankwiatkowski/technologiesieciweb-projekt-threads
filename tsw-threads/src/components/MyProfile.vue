@@ -38,45 +38,118 @@ onMounted(()=>{
 
 </script>
 <template>
-    <ul v-if="me && me.login">
-        <li>Login: {{me.login}}</li>
-        <li>Email: {{me.email}}</li>
-        <li>Admin?: {{me.isAdmin}}</li>
-        <button v-if="me.isAdmin" @click="seeAllUsers()">See all users</button>
+  <div class="profile-page">
+    <ul v-if="me && me.login" class="profile-card">
+      <li><strong>Login:</strong> {{ me.login }}</li>
+      <li><strong>Email:</strong> {{ me.email }}</li>
+      <li><strong>Admin:</strong> {{ me.isAdmin }}</li>
+
+      <button v-if="me.isAdmin" class="admin-btn" @click="seeAllUsers()">
+        See all users
+      </button>
     </ul>
-    <div v-if="me && me._id">
-        <form @submit.prevent="patchPassword">
-        <input v-model="password" type="password" placeholder="Your password" required/>
-        <input v-model="repeatedPassword" type="password" placeholder="Repeat your password" required/>
-        <button>Change your password</button>
-    </form>
+
+    <div v-if="me && me._id" class="password-card">
+      <form @submit.prevent="patchPassword" class="password-form">
+        <h3>Change your password</h3>
+
+        <input v-model="password" type="password" placeholder="Your password" required />
+        <input v-model="repeatedPassword" type="password" placeholder="Repeat your password" required />
+
+        <button class="change-btn">Change your password</button>
+      </form>
     </div>
+  </div>
 </template>
+
 <style scoped>
-button {
-  background: #333;
+.profile-page {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 0 20px;
+  color: var(--text);
+}
+
+.profile-card {
+  list-style: none;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-card li {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.admin-btn {
+  margin-top: 12px;
+  align-self: flex-start;
+  padding: 8px 18px;
+  background: var(--accent);
+  color: #000;
   border: none;
-  padding: 8px 14px;
-  color: #eee;
-  border-radius: 4px;
+  border-radius: 20px;
+  font-weight: 600;
   cursor: pointer;
-  margin-left: 6px;
-  transition: 0.2s;
+  transition: opacity 0.2s;
 }
-button:hover {
-  background: #444;
+
+.admin-btn:hover {
+  opacity: 0.85;
 }
+
+.password-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 22px;
+  border-radius: 18px;
+}
+
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+h3 {
+  margin: 0 0 5px;
+  font-size: 1.2rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
 input {
-  padding: 8px;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #eee;
-  flex: 1;
+  padding: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 0.95rem;
 }
 
 input:focus {
   outline: none;
-  border-color: #666;
+  border-color: #555;
+}
+
+.change-btn {
+  padding: 12px;
+  background: var(--accent);
+  color: #000;
+  border-radius: 26px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.change-btn:hover {
+  opacity: 0.85;
 }
 </style>

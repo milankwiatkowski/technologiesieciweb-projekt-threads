@@ -51,17 +51,112 @@ onMounted(()=>{
 
 </script>
 <template>
-    <ul>
-        <div v-for="user in usersToShow":key="user._id">
-            {{user.login}}
-            <button v-if="!user.isAdmin" @click="deleteUser(user._id)">Remove user</button>
-        </div>
+  <div class="user-panel">
+
+    <h2>Users</h2>
+    <ul class="user-list">
+      <li v-for="user in usersToShow" :key="user._id" class="user-item">
+        <div class="username">{{ user.login }}</div>
+
+        <button 
+          v-if="!user.isAdmin" 
+          class="remove-btn"
+          @click="deleteUser(user._id)">
+          Remove user
+        </button>
+      </li>
     </ul>
-    <h2>Users to be accepted:</h2>
-    <ul>
-        <div v-for="user in usersToBeAccepted":key="user._id">
-            {{ user.login }}
-            <button @click="acceptUser(user._id)">Accept User</button>
-        </div>
+
+    <h2 class="section-title">Users to be accepted</h2>
+
+    <ul class="user-list">
+      <li v-for="user in usersToBeAccepted" :key="user._id" class="user-item">
+        <div class="username">{{ user.login }}</div>
+
+        <button 
+          class="accept-btn"
+          @click="acceptUser(user._id)">
+          Accept User
+        </button>
+      </li>
     </ul>
+
+  </div>
 </template>
+<style scoped>
+.user-panel {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+  color: var(--text);
+}
+
+h2 {
+  font-size: 1.4rem;
+  margin: 25px 0 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.section-title {
+  margin-top: 35px;
+}
+
+.user-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all 0.2s;
+}
+
+.user-item:hover {
+  background: #1d1d1d;
+}
+
+.username {
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+
+.remove-btn,
+.accept-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: #222;
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.remove-btn:hover,
+.accept-btn:hover {
+  background: #333;
+}
+
+.accept-btn {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.accept-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+</style>

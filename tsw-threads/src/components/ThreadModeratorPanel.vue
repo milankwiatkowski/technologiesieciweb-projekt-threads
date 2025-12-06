@@ -65,15 +65,127 @@ onMounted(()=>{
 </script>
 
 <template>
-    <div v-if="thread && thread.title">Welcome to ModPanel for Thread {{thread.title}}</div>
-    <ul v-if="thread && thread.threadAuthors">
-        <li v-for="author in thread.threadAuthors":key="author.id">
-            {{ author.login }}
-            {{ author.id }}
-            <button v-if="!blockedUsersId.includes(author.id)" @click="blockUser(author.id)">Block this user in this Thread</button>
-            <button v-else @click="unblockUser(author.id)">Unblock this user in this Thread</button>
-            <button v-if="!thread.modsThreadId.includes(author.id)" @click="giveMod(author.id)">Give mod to this user in this Thread</button>
-            <button v-if="thread.modsThreadId.includes(author.id)" @click="takeMod(author.id)">Take mod from this user in this Thread</button>
-        </li>
+  <div class="modpanel">
+    <div v-if="thread && thread.title" class="title">
+      Welcome to ModPanel for Thread "{{ thread.title }}"
+    </div>
+
+    <ul v-if="thread && thread.threadAuthors" class="author-list">
+      <li v-for="author in thread.threadAuthors" :key="author.id" class="author-item">
+        <div class="info">
+          <div class="login">{{ author.login }}</div>
+          <div class="userid">{{ author.id }}</div>
+        </div>
+
+        <div class="actions">
+          <button
+            class="btn"
+            v-if="!blockedUsersId.includes(author.id)"
+            @click="blockUser(author.id)"
+          >
+            Block user
+          </button>
+
+          <button
+            class="btn"
+            v-else
+            @click="unblockUser(author.id)"
+          >
+            Unblock user
+          </button>
+
+          <button
+            class="btn"
+            v-if="!thread.modsThreadId.includes(author.id)"
+            @click="giveMod(author.id)"
+          >
+            Give mod
+          </button>
+
+          <button
+            class="btn"
+            v-if="thread.modsThreadId.includes(author.id)"
+            @click="takeMod(author.id)"
+          >
+            Take mod
+          </button>
+        </div>
+      </li>
     </ul>
+  </div>
 </template>
+
+<style scoped>
+.modpanel {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  color: var(--text);
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 25px;
+}
+
+.author-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.author-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  transition: background-color 0.2s;
+}
+
+.author-item:hover {
+  background-color: #1d1d1d;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.login {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.userid {
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 16px;
+  background: #222;
+  color: var(--text);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn:hover {
+  background-color: #333;
+}
+</style>

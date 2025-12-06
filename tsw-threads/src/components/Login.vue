@@ -31,39 +31,90 @@ function goToRegister(){
 </script>
 
 <template>
-    <form @submit.prevent="sendLogin">
-        <input v-model="login" placeholder="Your login" required/>
-        <input v-model="password" type="password" placeholder="Your password" required/>
-        <button>Login</button>
+  <div class="login-wrapper">
+    <form class="login-form" @submit.prevent="sendLogin">
+      <h2>Log in</h2>
+
+      <input v-model="login" placeholder="Your login" required />
+      <input v-model="password" type="password" placeholder="Your password" required />
+
+      <button type="submit" class="login-btn">Login</button>
     </form>
-    <button @click="goToRegister()">Don't have an account yet? Register now!</button>
+
+    <button class="to-register-btn" @click="goToRegister()">
+      Don't have an account yet? Register now!
+    </button>
+  </div>
 </template>
 
 <style scoped>
-button {
-  background: #333;
-  border: none;
-  padding: 8px 14px;
-  color: #eee;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 6px;
-  transition: 0.2s;
+.login-wrapper {
+  max-width: 420px;
+  margin: 80px auto;
+  padding: 20px;
+  text-align: center;
+  color: var(--text);
 }
-button:hover {
-  background: #444;
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--card);
+  padding: 30px 26px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
 }
+
+h2 {
+  margin: 0 0 10px;
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: var(--text);
+}
+
 input {
-  padding: 8px;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #eee;
-  flex: 1;
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 0.95rem;
 }
 
 input:focus {
   outline: none;
-  border-color: #666;
+  border-color: #555;
+}
+
+.login-btn {
+  padding: 12px;
+  background: var(--accent);
+  color: #000;
+  border-radius: 26px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.login-btn:hover {
+  opacity: 0.85;
+}
+
+.to-register-btn {
+  margin-top: 16px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.to-register-btn:hover {
+  opacity: 0.7;
 }
 </style>
