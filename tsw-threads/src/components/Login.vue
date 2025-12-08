@@ -20,8 +20,12 @@ async function sendLogin(){
             console.log(res)
             router.push("/threads")
         }).catch((err)=>{
-            console.log(err)
-            router.push('/waitingRoom')
+            if(err.status==500){
+              router.push('/waitingRoom')
+            }
+            else{
+              alert("Wrong credentials!")
+            }
         })
 }
 function goToRegister(){

@@ -108,8 +108,7 @@ onMounted(()=>{
     <ul v-if="threads && threads.length > 0">
       <li v-for="thread in threads" :key="thread._id">
         <div class="thread-text">
-          <strong>{{ thread.title }}</strong>
-          <p>{{ thread.content }}</p>
+          <strong>{{ thread.title }}</strong> 
           <p>{{ thread.tags }}</p>
         </div>
 

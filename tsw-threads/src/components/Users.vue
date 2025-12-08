@@ -10,6 +10,7 @@ const router = useRouter()
 const users = ref([])
 const usersToBeAccepted = ref([])
 const usersToShow = ref([])
+const admins = ref([])
 socket.on('userAccepted',(user)=>{
     usersToBeAccepted.value = usersToBeAccepted.value.filter((x)=> x._id !== user._id)
     usersToShow.value.push(user)
@@ -17,10 +18,14 @@ socket.on('userAccepted',(user)=>{
 socket.on('addUserToBeAccepted',(user)=>{
     usersToBeAccepted.value.push(user)
 })
+socket.on(`adminAdded`,(user)=>{
+  admins.value.push(user)
+})
 async function getUsers(){
     const fetch = axios.get('https://localhost/api/users',{withCredentials:true}).then((res)=>{
         users.value = res.data.users
         usersToShow.value = res.data.users.filter((x) => x.isAcceptedByAdmin === true)
+        admins.value = res.data.users.filter((x) => x.isAdmin === true)
     }).catch((err)=>{
             console.log(err)
     })
@@ -44,6 +49,11 @@ async function acceptUser(id){
             console.log(err)
     })
 }
+async function giveAdmin(id){
+    const fetch = axios.post(`https://localhost/api/users/giveAdmin/${id}`,{},{withCredentials:true}).catch((err)=>{
+      console.log(err)
+    })
+}
 onMounted(()=>{
     getUsers()
     getUsersToBeAccepted()
@@ -58,12 +68,8 @@ onMounted(()=>{
       <li v-for="user in usersToShow" :key="user._id" class="user-item">
         <div class="username">{{ user.login }}</div>
 
-        <button 
-          v-if="!user.isAdmin" 
-          class="remove-btn"
-          @click="deleteUser(user._id)">
-          Remove user
-        </button>
+        <button v-if="!user.isAdmin" class="remove-btn" @click="deleteUser(user._id)">Remove user</button>
+        <button v-if="!admins.includes(user)" class="remove-btn" @click="giveAdmin(user._id)">Make {{ user.login }} an admin</button>
       </li>
     </ul>
 

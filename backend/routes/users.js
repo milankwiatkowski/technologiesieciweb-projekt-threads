@@ -129,4 +129,18 @@ router.post(`/toBeAccepted/:id`,isAdmin, async (req, res,next) => {
         next(err)
     }
 });
+router.post(`/giveAdmin/:id`,isAdmin,async(req,res,next)=>{
+    console.log(`INFO Admin ${req.user.login} is trying to give admin to user ${req.params.id} ${time}`)
+    try{
+        const user = await User.findByIdAndUpdate(req.params.id,
+            { $set: {isAdmin:true}},
+            { new:true, runValidators:true})
+        req.app.get('io').emit('adminAdded',user)
+        return res.json({user:user,status:200})
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
+        next(err)
+    }
+})
 module.exports = router;
