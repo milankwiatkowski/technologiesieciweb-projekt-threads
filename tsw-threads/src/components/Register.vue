@@ -18,8 +18,7 @@ async function sendRegister(){
     if(password.value===repeatedpassword.value){
         const fetch = await axios.post('https://localhost/api/auth/register',{
             password:password.value,
-            login:login.value,
-            email:email.value
+            login:login.value
         }).then((res)=>{
             if(res.status===200){
                 router.push("/")
@@ -39,10 +38,9 @@ async function sendRegister(){
     <form class="register-form" @submit.prevent="sendRegister">
       <h2>Create your account</h2>
 
-      <input v-model="login" placeholder="Your login" required />
+      <input v-model="login" placeholder="Your email as login" required />
       <input v-model="password" type="password" placeholder="Your password" required />
       <input v-model="repeatedpassword" type="password" placeholder="Repeat your password" required />
-      <input v-model="email" type="email" placeholder="Your email" required />
 
       <button type="submit">Register</button>
     </form>

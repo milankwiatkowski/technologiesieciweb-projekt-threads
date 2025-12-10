@@ -6,6 +6,7 @@ import {io} from "socket.io-client"
 const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 const router = useRouter()
 
+const tdamount = ref(0)
 const threads = ref([])
 const title = ref('')
 const content = ref('')
@@ -15,16 +16,14 @@ const lastPage = ref(Number(localStorage.getItem("lastRootPage")) || 1)
 const adminMessages = ref([])
 
 socket.on("threadAdded",(thread)=>{
-    if(lastPage.value==1 && threads.value.length<5){
-      threads.value.unshift(thread)
+    if(threads.value.length<3){
+      threads.value.push(thread)
     }
-    else if(lastPage.value==1){
-      threads.value.pop()
-      threads.value.unshift(thread)
-    }
+    tdamount.value+=1
 })
 socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
+  tdamount.value-=1
 })
 socket.on('adminMessage',(info)=>{
   if(adminMessages.value>5){
@@ -45,8 +44,9 @@ async function getMyData(){
 }
 
 async function getThreads(page){
-    const fetch = axios.get(`https://localhost/api/threads/${page}/${5}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/threads/root/${page}/${3}`,{withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
+        tdamount.value = res.data.threads.length
     }).catch((err)=>{
         console.log(err)
     })
@@ -66,7 +66,7 @@ async function deleteThread(id){
 }
 
 async function addThread(){
-    const fetch = axios.post('https://localhost/api/threads/',{
+    const fetch = axios.post('https://localhost/api/threads/root/',{
         title: title.value,
         content: content.value,
         tags: tags.value},
@@ -125,7 +125,7 @@ onMounted(()=>{
     <div>
       <div class="pagination">
         <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-        <button v-if="threads.length >5" @click="nextPage()">Next page</button>
+        <button v-if="tdamount >= 3" @click="nextPage()">Next page</button>
       </div>
 
       <div class="form-wrapper">

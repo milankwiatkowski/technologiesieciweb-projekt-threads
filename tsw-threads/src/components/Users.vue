@@ -21,6 +21,9 @@ socket.on('addUserToBeAccepted',(user)=>{
 socket.on(`adminAdded`,(user)=>{
   admins.value.push(user)
 })
+socket.on(`userNotAccepted`,(user)=>{
+  usersToBeAccepted.value = usersToBeAccepted.value.filter((x) => x !== user)
+})
 async function getUsers(){
     const fetch = axios.get('https://localhost/api/users',{withCredentials:true}).then((res)=>{
         users.value = res.data.users
@@ -46,6 +49,11 @@ async function getUsersToBeAccepted(){
 }
 async function acceptUser(id){
     const fetch = axios.post(`https://localhost/api/users/toBeAccepted/${id}`,{},{withCredentials:true}).catch((err)=>{
+            console.log(err)
+    })
+}
+async function dontAcceptUser(id){
+    const fetch = axios.post(`https://localhost/api/users/notToBeAccepted/${id}`,{},{withCredentials:true}).catch((err)=>{
             console.log(err)
     })
 }
@@ -79,11 +87,8 @@ onMounted(()=>{
       <li v-for="user in usersToBeAccepted" :key="user._id" class="user-item">
         <div class="username">{{ user.login }}</div>
 
-        <button 
-          class="accept-btn"
-          @click="acceptUser(user._id)">
-          Accept User
-        </button>
+        <button class="accept-btn" @click="acceptUser(user._id)">Accept User</button>
+        <button class="accept-btn" @click="dontAcceptUser(user._id)">Don't accept User</button>
       </li>
     </ul>
 

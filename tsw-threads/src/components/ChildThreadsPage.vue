@@ -8,6 +8,7 @@ import hljs from "highlight.js"
 
 const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 
+const tdamount = ref(0)
 const route = useRoute();
 const router = useRouter()
 const threads = ref([])
@@ -30,25 +31,24 @@ socket.on('unblockedUser',(id)=>{
     console.log(blockedUsersId.value)
 })
 socket.on("subthreadAdded",(subthread)=>{
-    if(lastPage.value==1 && threads.value.length<4){
-      threads.value.unshift(subthread)
+    if(threads.value.length<3){
+      threads.value.push(subthread)
     }
-    else if(lastPage.value==1){
-      threads.value.pop()
-      threads.value.unshift(subthread)
-    }
+  tdamount.value+=1
 })
 socket.on("liked",(currLikes)=>{
   likes.value = currLikes.likes
 })
 socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
+  tdamount.value-=1
 })
 async function getThreads(page){
-    const fetch = axios.get(`https://localhost/api/threads/${threadId}/${page}/${4}`,{withCredentials:true}
+    const fetch = axios.get(`https://localhost/api/threads/sub/${threadId}/${page}/${3}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
         thread.value = res.data.thread
+        tdamount.value = res.data.threads.length
         blockedUsersId.value = thread.value.blockedId
         console.log(thread.value.blockedId)
     }).catch((err)=>{
@@ -57,7 +57,7 @@ async function getThreads(page){
 }
 
 async function addThread(){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId}`,{
+    const fetch = axios.post(`https://localhost/api/threads/subthread/${threadId}`,{
         title: title.value, content: content.value,tags:tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
@@ -199,17 +199,17 @@ watch(
       <p class="likes"><strong>Likes:</strong> {{ likes }}</p>
       <HighlightedText v-if="thread.content" :text="thread.content" class="thread-content" />
       <p class="tags"><strong>Tags:</strong> {{ thread.tags }}</p>
-
+      <div class="pagination">
+        {{ tdamount }}
+        <button class="btn" v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
+        <button class="btn" v-if="tdamount >= 3" @click="nextPage()">Next page</button>
+      </div>
       <div class="thread-buttons">
         <button class="btn accent" @click="like()">Like</button>
         <button class="btn" v-if="me.isAdmin || thread.creatorId === me._id" @click="setEditing()">Edit</button>
         <button class="btn manager" v-if="me.isAdmin || (thread.modsThreadId || []).includes(me._id)" @click="goToModpanel(threadId)">Manage</button>
       </div>
     </div>
-      <div class="pagination">
-        <button class="btn-nav" v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-        <button class="btn-nav" v-if="threads.length >5" @click="nextPage()">Next page</button>
-      </div>
 
     <div v-if="!thread.isClosed && !blockedUsersId.includes(me._id) && !isEditing" class="reply-box">
       <form @submit.prevent="addThread" class="reply-form">

@@ -50,7 +50,7 @@ router.get('/find/:idUser', async (req, res) => {
     try{
         const foundUser = await User.findById(id)
         console.log(`INFO User ${req.user.login} successfully found user ${req.params.idUser} ${time}`)
-        res.render('userFound', {id:foundUser._id,isUserAdmin:foundUser.isAdmin,login:foundUser.login,email:foundUser.email,isAdmin: req.user && req.user.isAdmin})}
+        res.render('userFound', {id:foundUser._id,isUserAdmin:foundUser.isAdmin,login:foundUser.login,isAdmin: req.user && req.user.isAdmin})}
     catch (err){
         console.log(`ERROR User ${req.params.idUser} not found ${time}`)
         res.render('userNotFound', {id:id})
@@ -87,12 +87,6 @@ router.post('/patch/:idUser', async (req, res) => {
                         console.log(`INFO User's ${req.body.login} PASSWORD was patched succesfully ${time}`)
                         return res.json({message:"Patch successful",user:user,status:200})})
             }
-            else if(req.body.email){
-                    await User.findByIdAndUpdate(req.params.idUser,
-                    { $set: {email:req.body.email}},
-                    { new:true, runValidators:true})
-                    console.log(`INFO User's ${req.body.login} EMAIL was patched successfully ${time}`)
-            }
             console.log(`INFO User ${req.user.id} successfully patched user ${req.params.idUser} ${time}`)
             const user = await User.findById(req.params.idUser)
             req.app.get("io").emit('user',user)
@@ -122,6 +116,20 @@ router.post(`/toBeAccepted/:id`,isAdmin, async (req, res,next) => {
             { $set: {isAcceptedByAdmin:true}},
             { new:true, runValidators:true})
         req.app.get('io').emit('userAccepted',user)
+        req.app.get('io').emit('userAction',user)
+        return res.json({user:user,status:200})
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${time}`)
+        next(err)
+    }
+});
+router.post(`/notToBeAccepted/:id`,isAdmin, async (req, res,next) => {
+    console.log(`INFO Admin ${req.user.login} is not accepting user ${req.params.id} ${time}`)
+    try{
+        const user = await User.findByIdAndDelete(req.params.id)
+        req.app.get('io').emit('userNotAccepted',user)
+        req.app.get('io').emit('userAction',user)
         return res.json({user:user,status:200})
     }
     catch(err){

@@ -100,11 +100,12 @@ router.post('/edit/:threadId',async(req,res)=>{
         return req.json({status:400})
     }
 })
-router.get('/:page/:limit',async(req,res)=>{
+router.get('/root/:page/:limit',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is requesting root threads ${time}`)
+        // await Thread.deleteMany()
         const {page,limit} = req.params
-        const threads = await Thread.find({isHidden:false}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:-1})
+        const threads = await Thread.find({isHidden:false,parentThreadId:null}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
         const filtered = threads.filter((x) => x.parentThreadId === null)
         console.log(`INFO User ${req.user.login} was granted root threads ${time}`)
         return res.json({threads:filtered,status:200})
@@ -114,19 +115,19 @@ router.get('/:page/:limit',async(req,res)=>{
         return res.json({status:400})
     }
 })
-router.get('/:threadId/:page/:limit',async(req,res)=>{
+router.get('/sub/:threadId/:page/:limit',async(req,res)=>{
     console.log(`INFO User ${req.user.login} is requesting threads from ${req.params.threadId} ${time}`)
     try{
         const {page,limit} = req.params
         const thread = await Thread.findById(req.params.threadId)
-        const threads = await Thread.find({parentThreadId:req.params.threadId,isHidden:false}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:-1})
+        const threads = await Thread.find({parentThreadId:req.params.threadId,isHidden:false}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
         console.log(`INFO User ${req.user.login} was granted threads from ${req.params.threadId} ${time}`)
         return res.json({threads:threads,thread:thread,status:200})
     }
     catch (err){
         console.log(`ERROR ${err} ${time}`)
         return res.json({status:400});
-}
+    }
 })
 router.delete('/:threadId',async(req,res)=>{
     try{
@@ -169,11 +170,11 @@ router.delete('/:threadId',async(req,res)=>{
         return res.json({message:'You are not the thread creator nor the administrator!',status:400})
     }
 })
-router.post('/',async(req,res)=>{
+router.post('/root',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to post a root thread ${time}`)
         const tags = req.body.tags.split(' ')
-        const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:null,childThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[],tags:[],isClosed:false,tags:tags,isHidden:false})
+        const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:null,childThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[],isClosed:false,tags:tags,isHidden:false,rootModId:req.user.id})
         await newThread.save()
         const threads = await Thread.find()
         console.log(`INFO User ${req.user.login} successfully added a root thread ${time}`)
@@ -185,13 +186,14 @@ router.post('/',async(req,res)=>{
         return res.json({message:"An error occured, we're working on it.",status:400})
     }
 })
-router.post('/:threadId',async(req,res)=>{
+router.post('/subthread/:threadId',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to post a thread ${req.params.threadId} ${time}`)
         const parentThread = await Thread.findById(req.params.threadId)
         const tags = req.body.tags.split(' ')
         if(!parentThread.blockedId.includes(req.user.id) && !parentThread.isClosed){
-            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false,tags:[...parentThread.tags,...tags],isHidden:false})
+            console.log("DODAJE SUBTHREAD")
+            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false,tags:[...parentThread.tags,...tags],isHidden:false,rootModId:parentThread.rootModId})
             await newThread.save()
             req.app.get("io").emit("subthreadAdded",newThread)
             const authors = parentThread.threadAuthors

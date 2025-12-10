@@ -16,6 +16,16 @@ socket.on('adminMessage',(info)=>{
   }
 })
 
+socket.on('userAction',(info)=>{
+  if(adminMessages.value.length==5){
+    adminMessages.value.pop()
+    adminMessages.value.unshift(info)
+  }
+  else{
+    adminMessages.value.unshift(info)
+  }
+})
+
 async function getMyData(){
     const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user

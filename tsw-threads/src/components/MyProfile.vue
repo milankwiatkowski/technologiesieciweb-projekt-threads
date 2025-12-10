@@ -8,7 +8,6 @@ const socket = io("https://localhost",{withCredentials:true,transports: ["websoc
 const router = useRouter()
 
 const me = ref({})
-const login = ref('')
 const password = ref('')
 const repeatedPassword = ref('')
 
@@ -41,7 +40,6 @@ onMounted(()=>{
   <div class="profile-page">
     <ul v-if="me && me.login" class="profile-card">
       <li><strong>Login:</strong> {{ me.login }}</li>
-      <li><strong>Email:</strong> {{ me.email }}</li>
       <li><strong>Admin:</strong> {{ me.isAdmin }}</li>
 
       <button v-if="me.isAdmin" class="admin-btn" @click="seeAllUsers()">

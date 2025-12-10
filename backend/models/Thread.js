@@ -4,7 +4,9 @@ const { Schema, model } = require('mongoose');
 const threadSchema = new Schema({
     title: String,
     content:String,
-    parentThreadId: Schema.Types.ObjectId || null,
+    parentThreadId: {
+    type: Schema.Types.ObjectId,
+    default: null},
     childThreadsId: [Schema.Types.ObjectId],
     modsThreadId: [Schema.Types.ObjectId],
     creatorId: Schema.Types.ObjectId,
@@ -14,7 +16,8 @@ const threadSchema = new Schema({
     blockedId : [Schema.Types.ObjectId],
     tags:[String],
     isClosed:Boolean,
-    isHidden:Boolean
+    isHidden:Boolean,
+    rootModId: Schema.Types.ObjectId
 },{timestamps:true});
 
 module.exports = model('Thread', threadSchema);

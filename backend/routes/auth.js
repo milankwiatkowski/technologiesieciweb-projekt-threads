@@ -29,14 +29,6 @@ const opts = {
   secretOrKey: SECRET,
 };
 
-// const users = await User.find()
-// if(users.length==0){
-//     crypto.pbkdf2("admin", salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-//         const user = new User({isAdmin:true,password:hashedPassword,login:admin,email:"admin@example.com",salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true})
-//         await user.save()
-//     })
-// }
-
 passport.use(new Strategy(opts, async (payload, done) => {
     try {
         const user = await User.findById(payload.id);
@@ -61,7 +53,7 @@ router.post('/login', async (req, res,next) => {
                         { expiresIn: '1d' });
                         res.cookie("jwt", accessToken, { httpOnly: true, secure:true,sameSite:"none" ,maxAge: 1000 * 60 * 60 * 24});
                     console.log(`INFO User ${req.body.login} succesfully logged in ${time}`)
-                    return res.json({message:"Login successful!",status:200})
+                    return res.json({message:"Login successful!",status:200, token:accessToken})
                 }
                 else{
                     console.log(`INFO User ${req.body.login} tried logging in but failed due to an incorrect password ${time}`)
@@ -90,7 +82,7 @@ router.post('/register', async (req, res,next) => {
         const users = await User.find()
         if(users.length===0){
             crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true})
+                const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true})
                 if (err) { return next(err); }
                 console.log(`INFO User ${req.body.login} registered succesfully ${time}`)
                 await user.save()
@@ -100,7 +92,7 @@ router.post('/register', async (req, res,next) => {
             const userFound = users.filter((x) => x.login === req.body.login)
             if(userFound.length===0){
                 crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                    const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,email:req.body.email,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
+                    const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
                     console.log(`INFO User ${req.body.login} registered succesfully ${time}`)
                     if (err) { return next(err); }
                     await user.save()
@@ -124,7 +116,6 @@ router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) 
         console.log(`INFO User ${req.user.login} is requesting authentication ${time}`)
           const userData = {
             _id: req.user.id,
-            email: req.user.email,
             login: req.user.login,
             isAdmin: req.user.isAdmin,
             isAcceptedByAdmin: req.user.isAcceptedByAdmin,};
