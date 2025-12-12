@@ -22,7 +22,7 @@ function logout(){
     })
 }
 function search(){
-  const fetch = axios.get(`https://localhost/api/threads/find/${tag.value}`,{withCredentials:true}).then(()=>{
+  const fetch = axios.get(`https://localhost/api/threads/find/${tag.value}/1/4`,{withCredentials:true}).then(()=>{
     router.push(`/searched/${tag.value}`)
   }).catch((err)=>{
     console.log(err)

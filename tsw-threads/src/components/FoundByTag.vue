@@ -12,7 +12,7 @@ const threads = ref([])
 const tag = route.params.tag
 
 const me = ref({})
-const lastPage = ref(Number(localStorage.getItem("lastPage")) || 1)
+const lastPage = ref(Number(localStorage.getItem("lastTagPage")) || 1)
 
 socket.on("subthreadAdded",(subthread)=>{
     if(lastPage.value==1 && threads.value.length<5){
@@ -32,9 +32,11 @@ socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
 })
 async function getThreads(page){
+  console.log(tag)
     const fetch = axios.get(`https://localhost/api/threads/find/${tag}/${page}/${4}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
+        console.log(res.data.threads)
     }).catch((err)=>{
             console.log(err)
     })
@@ -53,14 +55,14 @@ async function gotoThread(id){
 
 async function nextPage(){
     lastPage.value++
-    localStorage.setItem("lastPage",lastPage.value)
+    localStorage.setItem("lastTagPage",lastPage.value)
     getThreads(lastPage.value)
 }
 
 async function prevPage(){
     if(lastPage.value>1){
         lastPage.value--
-        localStorage.setItem("lastPage",lastPage.value)
+        localStorage.setItem("lastTagPage",lastPage.value)
         getThreads(lastPage.value)
     }
 }
@@ -94,7 +96,7 @@ watch(
       <li v-for="thread in threads" :key="thread._id" class="thread-item">
         <div class="thread-info">
           <div class="title">{{ thread.title }}</div>
-          <div class="likes">❤️ {{ thread.likes }}</div>
+          <div class="likes">{{ thread.likes }}</div>
         </div>
 
         <div class="actions">

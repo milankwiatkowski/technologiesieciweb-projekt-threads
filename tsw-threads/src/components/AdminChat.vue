@@ -7,6 +7,7 @@ const me = ref({})
 const adminMessages = ref([])
 
 socket.on('adminMessage',(info)=>{
+  console.log(info)
   if(adminMessages.value.length==5){
     adminMessages.value.pop()
     adminMessages.value.unshift(info)
