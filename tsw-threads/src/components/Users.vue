@@ -22,7 +22,7 @@ socket.on(`adminAdded`,(user)=>{
   admins.value.push(user)
 })
 socket.on(`userNotAccepted`,(user)=>{
-  usersToBeAccepted.value = usersToBeAccepted.value.filter((x) => x !== user)
+  usersToBeAccepted.value = usersToBeAccepted.value.filter((x) => x._id !== user._id)
 })
 async function getUsers(){
     const fetch = axios.get('https://localhost/api/users',{withCredentials:true}).then((res)=>{

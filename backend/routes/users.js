@@ -116,7 +116,7 @@ router.post(`/toBeAccepted/:id`,isAdmin, async (req, res,next) => {
             { $set: {isAcceptedByAdmin:true}},
             { new:true, runValidators:true})
         req.app.get('io').emit('userAccepted',user)
-        req.app.get('io').emit('userAction',user)
+        req.app.get('io').emit('adminMessage',`INFO - User ${req.body.login} was accepted!`)
         return res.json({user:user,status:200})
     }
     catch(err){
@@ -129,7 +129,7 @@ router.post(`/notToBeAccepted/:id`,isAdmin, async (req, res,next) => {
     try{
         const user = await User.findByIdAndDelete(req.params.id)
         req.app.get('io').emit('userNotAccepted',user)
-        req.app.get('io').emit('userAction',user)
+        req.app.get('io').emit('adminMessage',`INFO - User ${req.body.login} was denied!`)
         return res.json({user:user,status:200})
     }
     catch(err){
