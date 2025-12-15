@@ -81,7 +81,7 @@ onMounted(()=>{
           <button class="btn" v-if="!blockedUsersId.includes(author.id)" @click="blockUser(author.id)">Block user</button>
 
           <button class="btn" v-else @click="unblockUser(author.id)">Unblock user</button>
-          <div v-if="thread.rootModId !== author.id">
+          <div v-if="!thread.rootModId.includes(author.id)">
             <button class="btn" v-if="!thread.modsThreadId.includes(author.id)" @click="giveMod(author.id)" >Give mod</button>
             <button class="btn" v-if="thread.modsThreadId.includes(author.id)" @click="takeMod(author.id)">Take mod</button>
           </div>
