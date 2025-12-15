@@ -17,7 +17,7 @@ const threadSchema = new Schema({
     tags:[String],
     isClosed:Boolean,
     isHidden:Boolean,
-    rootModId: Schema.Types.ObjectId
+    rootModId: [Schema.Types.ObjectId]
 },{timestamps:true});
 
 module.exports = model('Thread', threadSchema);
