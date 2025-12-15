@@ -193,7 +193,7 @@ router.post('/subthread/:threadId',async(req,res)=>{
         const tags = req.body.tags.split(' ')
         if(!parentThread.blockedId.includes(req.user.id) && !parentThread.isClosed){
             console.log("DODAJE SUBTHREAD")
-            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false,tags:[...parentThread.tags,...tags],isHidden:false,rootModId:parentThread.rootModId})
+            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false,tags:[...parentThread.tags,...tags],isHidden:false,rootModId:[parentThread.rootModId,req.user.id]})
             await newThread.save()
             req.app.get("io").emit("subthreadAdded",newThread)
             const authors = parentThread.threadAuthors
