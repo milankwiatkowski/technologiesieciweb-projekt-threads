@@ -129,11 +129,12 @@ router.get('/sub/:threadId/:page/:limit',async(req,res)=>{
         return res.json({status:400});
     }
 })
-router.delete('/:threadId',async(req,res)=>{
+router.delete('/delete/:threadId',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to delete thread ${req.params.threadId} ${time}`)
         const threadToBeDeleted = await Thread.findById(req.params.threadId)
-        if(req.user.id === threadToBeDeleted.creatorId  || req.user.isAdmin){
+        // console.log("MY ID: ",req.user.id," TDBD CREATOR ID: ",threadToBeDeleted.creatorId)
+        if(req.user.id === threadToBeDeleted.creatorId.toString()  || req.user.isAdmin){
             const stack = []
             async function getChildren(thread){
                 if(thread.childThreadsId.length === 0){
@@ -193,7 +194,7 @@ router.post('/subthread/:threadId',async(req,res)=>{
         const tags = req.body.tags.split(' ')
         if(!parentThread.blockedId.includes(req.user.id) && !parentThread.isClosed){
             console.log("DODAJE SUBTHREAD")
-            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false,tags:[...parentThread.tags,...tags],isHidden:false,rootModId:[parentThread.rootModId,req.user.id]})
+            const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:parentThread._id,childThreadsId:[],modsThreadId:[...parentThread.modsThreadId,req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[...parentThread.blockedId],tags:[...parentThread.tags],isClosed:false,tags:[...parentThread.tags,...tags],isHidden:false,rootModId:[...parentThread.rootModId,req.user.id]})
             await newThread.save()
             req.app.get("io").emit("subthreadAdded",newThread)
             const authors = parentThread.threadAuthors

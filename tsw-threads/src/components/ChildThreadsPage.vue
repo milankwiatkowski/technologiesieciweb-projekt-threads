@@ -65,7 +65,7 @@ async function addThread(){
 }
 
 async function deleteThread(id){
-    const fetch = axios.delete(`https://localhost/api/threads/${id}`,{
+    const fetch = axios.delete(`https://localhost/api/threads/delete/${id}`,{
         withCredentials:true}).catch((err)=>{
         console.log(err)
     })
@@ -167,20 +167,23 @@ watch(
         </div>
 
         <div class="child-actions">
-          <button v-if="(!blockedUsersId.includes(me._id) && (thread.creatorId === me._id || thread.modsThreadId.includes(me._id)) || me.isAdmin)" class="btn delete" @click="deleteThread(thread2._id)">Delete</button>
+          <button v-if="(!blockedUsersId.includes(me._id) && ((thread2.rootModId || []).includes(me._id) || thread.modsThreadId.includes(me._id)) || me.isAdmin)" class="btn delete" @click="deleteThread(thread2._id)">Delete</button>
           <button class="btn" @click="goToThread(thread2._id)">See more</button>
           <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button>
         </div>
       </li>
     </ul>
-
+    <div class="pagination">
+      <button class="btn" v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
+      <button class="btn" v-if="tdamount >= 3" @click="nextPage()">Next page</button>
+    </div>
     <div v-if="!isEditing" class="back-nav">
       <button v-if="thread.parentThreadId === null" class="btn-nav" @click="goToRoot()">Go to previous thread</button>
       <button v-else class="btn-nav" @click="goToThread(thread.parentThreadId)">Go to previous thread</button>
     </div>
 
     <button
-      v-if="!thread.isClosed && (me.isAdmin || thread.creatorId == me._id || (thread.modsThreadId || []).includes(me._id)) && !isEditing"
+      v-if="!thread.isClosed && (me.isAdmin || (thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) && !isEditing"
       class="btn-wide warn"
       @click="close()"
     >
@@ -188,7 +191,7 @@ watch(
     </button>
 
     <button
-      v-if="thread.isClosed && (me.isAdmin || thread.creatorId == me._id || (thread.modsThreadId || []).includes(me._id)) && !isEditing"
+      v-if="thread.isClosed && (me.isAdmin || thread.rootModId.includes(me._id) || (thread.modsThreadId || []).includes(me._id)) && !isEditing"
       class="btn-wide"
       @click="close()"
     >
@@ -199,14 +202,9 @@ watch(
       <p class="likes"><strong>Likes:</strong> {{ likes }}</p>
       <HighlightedText v-if="thread.content" :text="thread.content" class="thread-content" />
       <p class="tags"><strong>Tags:</strong> {{ thread.tags }}</p>
-      <div class="pagination">
-        {{ tdamount }}
-        <button class="btn" v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-        <button class="btn" v-if="tdamount >= 3" @click="nextPage()">Next page</button>
-      </div>
       <div class="thread-buttons">
         <button class="btn accent" @click="like()">Like</button>
-        <button class="btn" v-if="me.isAdmin || thread.creatorId === me._id" @click="setEditing()">Edit</button>
+        <button class="btn" v-if="me.isAdmin || (thread.rootModId || []).includes(me._id)" @click="setEditing()">Edit</button>
         <button class="btn manager" v-if="me.isAdmin || (thread.modsThreadId || []).includes(me._id)" @click="goToModpanel(threadId)">Manage</button>
       </div>
     </div>
@@ -220,7 +218,7 @@ watch(
       </form>
     </div>
 
-    <div v-if="isEditing && (me.isAdmin || thread.creatorId === me._id)" class="edit-box">
+    <div v-if="isEditing && (me.isAdmin || (thread.rootModId || []).includes(me._id))" class="edit-box">
       <form @submit="editThread(thread._id)" class="edit-form">
         <div class="edit-group">
           <strong>Current title:</strong> {{ thread.title }}

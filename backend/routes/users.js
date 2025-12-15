@@ -31,7 +31,7 @@ router.get('/',isAdmin, async (req, res) => {
 router.delete('/:idUser',isAdmin, async (req, res) => {
     console.log(`INFO User ${req.user.login} is trying to delete user ${req.params.idUser} ${time}`)
     try{
-        const user = User.findById(req.params.idUser)
+        const user = await User.findById(req.params.idUser)
         if(!user.isAdmin){
             await User.findByIdAndDelete(req.params.idUser)
             console.log(`INFO User ${req.params.idUser} was succesfully deleted ${time}`)

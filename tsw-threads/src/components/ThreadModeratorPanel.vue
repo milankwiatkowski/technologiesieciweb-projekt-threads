@@ -27,7 +27,7 @@ async function getMyData(){
 }
 
 async function getThread(){
-    const fetch = axios.get(`https://localhost/api/threads/${threadId}/${1}/${10}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/threads/sub/${threadId}/${1}/${10}`,{withCredentials:true}).then((res)=>{
         thread.value = res.data.thread
         blockedUsersId.value = res.data.thread.blockedId
     }).catch((err)=>{

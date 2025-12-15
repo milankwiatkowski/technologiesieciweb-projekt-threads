@@ -57,10 +57,8 @@ async function getThreadDetails(id){
 }
 
 async function deleteThread(id){
-    const fetch = axios.delete(`https://localhost/api/threads/${id}`,{
-        withCredentials:true}).then((res)=>{
-        getThreads(lastPage.value)
-    }).catch((err)=>{
+    const fetch = axios.delete(`https://localhost/api/threads/delete/${id}`,{
+        withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }

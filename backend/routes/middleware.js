@@ -22,7 +22,6 @@ const isAcceptedByAdmin = (req,res,next) =>{
       return next()
     }
     else{
-      console.log(`ERROR ${err} ${time}`)
       return res.status(403).send("You are not an accepted user!");
     }
 }
