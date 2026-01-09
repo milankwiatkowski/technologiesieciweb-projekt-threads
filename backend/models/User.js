@@ -4,7 +4,7 @@ const { Schema, model } = require('mongoose');
 const userSchema = new Schema({
     isAdmin: Boolean,
     login: String,
-    registrationDate: Date,
+    registrationDate: String,
     password: Buffer,
     salt: Buffer,
     modOfThreadsId:[Schema.Types.ObjectId],
