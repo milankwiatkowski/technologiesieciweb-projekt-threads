@@ -91,7 +91,7 @@ router.post('/register', async (req, res,next) => {
         const users = await User.find()
         if(users.length===0){
             crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate(),street:req.body.street,city:req.body.city,zipCode:req.body.zipCode})
+                const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate()})
                 if (err) { return next(err); }
                 console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
                 await user.save()
@@ -101,7 +101,7 @@ router.post('/register', async (req, res,next) => {
             const userFound = users.filter((x) => x.login === req.body.login)
             if(userFound.length===0){
                 crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                    const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false,street:req.body.street,city:req.body.city,zipCode:req.body.zipCode})
+                    const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
                     console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
                     if (err) { return next(err); }
                     await user.save()
