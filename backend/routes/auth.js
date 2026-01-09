@@ -16,14 +16,23 @@ const cookieExtractor = req => {
     }
     return null;
 };
-const time = new Date().toLocaleString('pl-PL', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit'
-});
+function getDate(){
+    return new Date().toLocaleString('pl-PL', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+}
+function getTime(){
+    return new Date().toLocaleString('pl-PL', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+}
 const opts = {
   jwtFromRequest: cookieExtractor,
   secretOrKey: SECRET,
@@ -41,7 +50,7 @@ passport.use(new Strategy(opts, async (payload, done) => {
 
 router.post('/login', async (req, res,next) => {
     try{
-        console.log(`INFO User is logging in ${time}`)
+        console.log(`INFO User is logging in ${getTime()}`)
         const user = await User.findOne({login:req.body.login})
         if(user){
             if(user.isAcceptedByAdmin){
@@ -52,39 +61,39 @@ router.post('/login', async (req, res,next) => {
                         SECRET,
                         { expiresIn: '1d' });
                         res.cookie("jwt", accessToken, { httpOnly: true, secure:true,sameSite:"none" ,maxAge: 1000 * 60 * 60 * 24});
-                    console.log(`INFO User ${req.body.login} succesfully logged in ${time}`)
+                    console.log(`INFO User ${req.body.login} succesfully logged in ${getTime()}`)
                     return res.json({message:"Login successful!",status:200, token:accessToken})
                 }
                 else{
-                    console.log(`INFO User ${req.body.login} tried logging in but failed due to an incorrect password ${time}`)
+                    console.log(`INFO User ${req.body.login} tried logging in but failed due to an incorrect password ${getTime()}`)
                     return res.status(501).json({messaage:"Incorrect password"})
                 }
             }
             else{
-                console.log(`INFO User ${req.body.login} tried logging in but failed due to not being accepted by admin ${time}`)
+                console.log(`INFO User ${req.body.login} tried logging in but failed due to not being accepted by admin ${getTime()}`)
                 return res.status(500).json({message:"You are not accepted by the administrator"})
             }
         }
         else{
-            console.log(`INFO User ${req.body.login} tried logging in but failed (wrong login) ${time}`)
+            console.log(`INFO User ${req.body.login} tried logging in but failed (wrong login) ${getTime()}`)
             return res.status(501).json({message:"Incorrect login"})
         }
     }
     catch (error){
-        console.log(`ERROR ${error} ${time}`)
+        console.log(`ERROR ${error} ${getTime()}`)
         next(error)
     }
 });
 router.post('/register', async (req, res,next) => {
-    console.log(`INFO User ${req.body.login} is trying to register ${time}`)
+    console.log(`INFO User ${req.body.login} is trying to register ${getTime()}`)
     try{
         let salt = crypto.randomBytes(Number(SALT_BITS));
         const users = await User.find()
         if(users.length===0){
             crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true})
+                const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate(),street:req.body.street,city:req.body.city,zipCode:req.body.zipCode})
                 if (err) { return next(err); }
-                console.log(`INFO User ${req.body.login} registered succesfully ${time}`)
+                console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
                 await user.save()
                 return res.json({message:"Registration successful!",status:200})})
         }
@@ -92,8 +101,8 @@ router.post('/register', async (req, res,next) => {
             const userFound = users.filter((x) => x.login === req.body.login)
             if(userFound.length===0){
                 crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                    const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
-                    console.log(`INFO User ${req.body.login} registered succesfully ${time}`)
+                    const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false,street:req.body.street,city:req.body.city,zipCode:req.body.zipCode})
+                    console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
                     if (err) { return next(err); }
                     await user.save()
                     req.app.get('io').emit('adminMessage',`INFO - User ${req.body.login} is waiting to be accepted!`)
@@ -101,19 +110,19 @@ router.post('/register', async (req, res,next) => {
                     return res.json({message:"Registration successful!",status:200})})
             }
             else{
-                console.log(`INFO Username ${req.body.login} was already taken ${time}`)
+                console.log(`INFO Username ${req.body.login} was already taken ${getTime()}`)
                 return res.status(500).json({message:"Username already taken"})
             }
         }
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({message:"Error occured",status:400})
     }
 });
 router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) => {
     try{
-        console.log(`INFO User ${req.user.login} is requesting authentication ${time}`)
+        console.log(`INFO User ${req.user.login} is requesting authentication ${getTime()}`)
           const userData = {
             _id: req.user.id,
             login: req.user.login,
@@ -122,7 +131,7 @@ router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) 
         return res.json({user:userData,status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
     }
 });
 router.post('/logout', (req, res, next) => {
