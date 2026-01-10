@@ -3,14 +3,16 @@ const router = express.Router();
 const path = require('node:path');
 const User = require(path.join(process.cwd(), 'models', 'User'));
 const Thread = require(path.join(process.cwd(), 'models', 'Thread'));
-const time = new Date().toLocaleString('pl-PL', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit'
-});
+function getTime(){
+    return new Date().toLocaleString('pl-PL', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+}
 // router.post('/deletemany',async(req,res)=>{
 //     try{
 //         await Thread.deleteMany()
@@ -30,24 +32,24 @@ router.get('/find/:tag/:page/:limit',async(req,res)=>{
 
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
 router.get('/:threadId/likes',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} tried getting thread likes ${time}`)
+        console.log(`INFO User ${req.user.login} tried getting thread likes ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
         return res.json({likes:thread.likes,status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
 router.post('/:threadId/likes',async(req,res)=>{
     try{
-        console.log(`INFO ${req.user.login} is giving thread a like ${time}`)
+        console.log(`INFO ${req.user.login} is giving thread a like ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
         const likes = thread.likes
         if(thread.userLikesId.find((x) => x.toString() === req.user.id)){
@@ -67,7 +69,7 @@ router.post('/:threadId/likes',async(req,res)=>{
         return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
@@ -91,47 +93,47 @@ router.post('/edit/:threadId',async(req,res)=>{
         const updated = await Thread.findByIdAndUpdate(req.params.threadId,
             { $set: {title:title,content:content,tags:tags}},
             { new:true, runValidators:true})
-        console.log(`INFO User ${req.user.id} successfully updated thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.id} successfully updated thread ${req.params.threadId} ${getTime()}`)
         req.app.get('io').emit('updated',updated)
         return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return req.json({status:400})
     }
 })
 router.get('/root/:page/:limit',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is requesting root threads ${time}`)
+        console.log(`INFO User ${req.user.login} is requesting root threads ${getTime()}`)
         // await Thread.deleteMany()
         const {page,limit} = req.params
         const threads = await Thread.find({isHidden:false,parentThreadId:null}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
         const filtered = threads.filter((x) => x.parentThreadId === null)
-        console.log(`INFO User ${req.user.login} was granted root threads ${time}`)
+        console.log(`INFO User ${req.user.login} was granted root threads ${getTime()}`)
         return res.json({threads:filtered,status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
 router.get('/sub/:threadId/:page/:limit',async(req,res)=>{
-    console.log(`INFO User ${req.user.login} is requesting threads from ${req.params.threadId} ${time}`)
+    console.log(`INFO User ${req.user.login} is requesting threads from ${req.params.threadId} ${getTime()}`)
     try{
         const {page,limit} = req.params
         const thread = await Thread.findById(req.params.threadId)
         const threads = await Thread.find({parentThreadId:req.params.threadId,isHidden:false}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
-        console.log(`INFO User ${req.user.login} was granted threads from ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} was granted threads from ${req.params.threadId} ${getTime()}`)
         return res.json({threads:threads,thread:thread,status:200})
     }
     catch (err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400});
     }
 })
 router.delete('/delete/:threadId',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to delete thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to delete thread ${req.params.threadId} ${getTime()}`)
         const threadToBeDeleted = await Thread.findById(req.params.threadId)
         // console.log("MY ID: ",req.user.id," TDBD CREATOR ID: ",threadToBeDeleted.creatorId)
         if(req.user.id === threadToBeDeleted.creatorId.toString()  || req.user.isAdmin){
@@ -163,33 +165,33 @@ router.delete('/delete/:threadId',async(req,res)=>{
                 )}
             }
             req.app.get("io").emit("threadDeleted",{_id:threadToBeDeleted._id})
-            console.log(`INFO User ${req.user.login} successfully deleted thread ${req.params.threadId} ${time}`)
+            console.log(`INFO User ${req.user.login} successfully deleted thread ${req.params.threadId} ${getTime()}`)
             return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({message:'You are not the thread creator nor the administrator!',status:400})
     }
 })
 router.post('/root',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to post a root thread ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to post a root thread ${getTime()}`)
         const tags = req.body.tags.split(' ')
         const newThread = new Thread({title:req.body.title,content:req.body.content,parentThreadId:null,childThreadsId:[],modsThreadId:[req.user.id],creatorId:req.user.id,threadAuthors:[],userLikesId:[],likes:0,blockedId:[],isClosed:false,tags:tags,isHidden:false,rootModId:req.user.id})
         await newThread.save()
         const threads = await Thread.find()
-        console.log(`INFO User ${req.user.login} successfully added a root thread ${time}`)
+        console.log(`INFO User ${req.user.login} successfully added a root thread ${getTime()}`)
         req.app.get("io").emit("threadAdded",newThread)
         return res.json({threads:threads,status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({message:"An error occured, we're working on it.",status:400})
     }
 })
 router.post('/subthread/:threadId',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to post a thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to post a thread ${req.params.threadId} ${getTime()}`)
         const parentThread = await Thread.findById(req.params.threadId)
         const tags = req.body.tags.split(' ')
         if(!parentThread.blockedId.includes(req.user.id) && !parentThread.isClosed){
@@ -207,18 +209,18 @@ router.post('/subthread/:threadId',async(req,res)=>{
                 { $set: {childThreadsId: [...parentThread.childThreadsId,newThread._id], threadAuthors: authors}},
                 { new:true, runValidators:true})
         const threads = await Thread.find({parentThreadId:parentThread._id})
-        console.log(`INFO User ${req.user.login} successfully added a thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} successfully added a thread ${req.params.threadId} ${getTime()}`)
         return res.json({threads:threads,status:200})
         }
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({message:"An error occured, we're working on it.",status:400})
     }
 })
 router.post('/:threadId/block/:userId',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to block user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to block user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
         const stack = []
         async function getChildren(thread){
@@ -249,17 +251,17 @@ router.post('/:threadId/block/:userId',async(req,res)=>{
             )
         }
         req.app.get('io').emit('blockedUser',req.params.userId)
-        console.log(`INFO User ${req.user.login} successfully blocked user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} successfully blocked user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
 router.post('/:threadId/unblock/:userId',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to unblock user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to unblock user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
         const stack = []
         async function getChildren(thread){
@@ -282,17 +284,17 @@ router.post('/:threadId/unblock/:userId',async(req,res)=>{
                 { $set: {blockedId:newBlocked}},
                 { new:true, runValidators:true})}
         req.app.get('io').emit('unblockedUser',req.params.userId)
-        console.log(`INFO User ${req.user.login} successfully blocked user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} successfully blocked user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
 router.post('/:threadId/givemod/:userId',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to give mod to user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to give mod to user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
         const mods = thread.modsThreadId
         if(!mods.includes(req.params.userId)){
@@ -311,17 +313,17 @@ router.post('/:threadId/givemod/:userId',async(req,res)=>{
             { $set: {modsThreadId:mods}},
             { new:true, runValidators:true}
         )
-        console.log(`INFO User ${req.user.login} successfully gave mod to user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} successfully gave mod to user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
 router.delete('/:threadId/givemod/:userId',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to take mod from user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to take mod from user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
         const mods = thread.modsThreadId
         if(mods.includes(req.params.userId)){
@@ -341,22 +343,22 @@ router.delete('/:threadId/givemod/:userId',async(req,res)=>{
             { new:true, runValidators:true}
             )
         }
-        console.log(`INFO User ${req.user.login} successfully took mod from user ${req.params.userId} in thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} successfully took mod from user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
 router.post('/close/:threadId',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to open/close thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to open/close thread ${req.params.threadId} ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
         const mods = thread.modsThreadId
         if(mods.includes(req.user.id) || req.user.isAdmin){
             if(thread.isClosed){
-                console.log(`INFO User ${req.user.login} is trying to open thread ${req.params.threadId} ${time}`)
+                console.log(`INFO User ${req.user.login} is trying to open thread ${req.params.threadId} ${getTime()}`)
                 const update = await Thread.findByIdAndUpdate(
                     req.params.threadId,
                     {$set: {isClosed:false}},
@@ -364,7 +366,7 @@ router.post('/close/:threadId',async(req,res)=>{
                 )
             }
             else{
-                console.log(`INFO User ${req.user.login} is trying to close thread ${req.params.threadId} ${time}`)
+                console.log(`INFO User ${req.user.login} is trying to close thread ${req.params.threadId} ${getTime()}`)
                 const update = await Thread.findByIdAndUpdate(
                     req.params.threadId,
                     {$set: {isClosed:true}},
@@ -372,17 +374,17 @@ router.post('/close/:threadId',async(req,res)=>{
                 )
             }
         }
-        console.log(`INFO User ${req.user.login} successfully changed the OPEN/CLOSE status of thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} successfully changed the OPEN/CLOSE status of thread ${req.params.threadId} ${getTime()}`)
         return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
 router.post('/hide/:threadId',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is trying to hide thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} is trying to hide thread ${req.params.threadId} ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
         const mods = thread.modsThreadId
         if(mods.includes(req.user.id) || req.user.isAdmin){
@@ -394,11 +396,11 @@ router.post('/hide/:threadId',async(req,res)=>{
                 req.app.get('io').emit('threadDeleted',thread)
             }
         }
-        console.log(`INFO User ${req.user.login} successfully changed the OPEN/CLOSE status of thread ${req.params.threadId} ${time}`)
+        console.log(`INFO User ${req.user.login} successfully changed the OPEN/CLOSE status of thread ${req.params.threadId} ${getTime()}`)
         return res.json({status:200})
     }
     catch(err){
-        console.log(`ERROR ${err} ${time}`)
+        console.log(`ERROR ${err} ${getTime()}`)
         return res.json({status:400})
     }
 })
