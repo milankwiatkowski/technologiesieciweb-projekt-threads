@@ -1,26 +1,26 @@
 <script setup>
-import {ref,onMounted, watch, computed} from "vue"
+import {ref,onMounted, watch} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
-import HighlightedText from './HighlightedText.vue'
-import hljs from "highlight.js"
 
 const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
-
+const lastThreadPage = ref(Number(localStorage.getItem("lastThreadPage")) || 1)
+const lastPostPage = ref(Number(localStorage.getItem("lastPostPage")) || 1)
 const tdamount = ref(0)
+const postsAmount = ref(0)
 const route = useRoute();
-const router = useRouter()
-const threads = ref([])
-const threadId = route.params.threadId
-const title = ref('')
 const content = ref('')
+const router = useRouter()
+const posts = ref([])
+const isAddingThread = ref(false)
+const isAddingPost = ref(false)
+const threadId = route.params.threadId
 const me = ref({})
-const likes = ref(0)
+const threads = ref([])
 const thread = ref({})
-const lastPage = ref(Number(localStorage.getItem("lastPage")) || 1)
+const title = ref('')
 const tags = ref('')
-const isEditing = ref(false)
 const blockedUsersId = ref([])
 socket.on('blockedUser',(id)=>{
     blockedUsersId.value.unshift(id)
@@ -31,20 +31,33 @@ socket.on('unblockedUser',(id)=>{
     console.log(blockedUsersId.value)
 })
 socket.on("subthreadAdded",(subthread)=>{
-    if(threads.value.length<3){
+    if(threads.value.length<10){
       threads.value.push(subthread)
     }
+  isAddingThread.value = false
   tdamount.value+=1
 })
-socket.on("liked",(currLikes)=>{
-  likes.value = currLikes.likes
+socket.on("postAdded",(post)=>{
+    if(posts.value.length<20){
+      posts.value.push(post)
+    }
+  isAddingPost.value = false
+  postsAmount.value+=1
+})
+socket.on("postDeleted",(post)=>{
+  posts.value = posts.value.filter((x)=>x._id !== post._id)
+  postsAmount.value-=1
 })
 socket.on("threadDeleted",(object)=>{
   threads.value = threads.value.filter((x)=>x._id !== object._id)
   tdamount.value-=1
 })
+// socket.on("threadDeleted",(object)=>{
+//   threads.value = threads.value.filter((x)=>x._id !== object._id)
+//   tdamount.value-=1
+// })
 async function getThreads(page){
-    const fetch = axios.get(`https://localhost/api/threads/sub/${threadId}/${page}/${3}`,{withCredentials:true}
+    const fetch = axios.get(`https://localhost/api/threads/sub/${threadId}/${page}/${10}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
         thread.value = res.data.thread
@@ -55,17 +68,31 @@ async function getThreads(page){
             console.log(err)
     })
 }
-
+async function getPosts(page){
+    const fetch = axios.get(`https://localhost/api/threads/${threadId}/posts/${page}/${20}`,{withCredentials:true}
+    ).then((res)=>{
+        posts.value = res.data.posts
+        postsAmount.value = res.data.posts.length
+    }).catch((err)=>{
+            console.log(err)
+    })
+}
 async function addThread(){
     const fetch = axios.post(`https://localhost/api/threads/subthread/${threadId}`,{
-        title: title.value, content: content.value,tags:tags.value},
+        title: title.value,tags:tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
-
-async function deleteThread(id){
-    const fetch = axios.delete(`https://localhost/api/threads/delete/${id}`,{
+async function addPost(){
+    const fetch = axios.post(`https://localhost/api/threads/${threadId}/post`,{
+        title: title.value, content: content.value},
+        {withCredentials:true}).catch((err)=>{
+        console.log(err)
+    })
+}
+async function deletePost(postId){
+    const fetch = axios.delete(`https://localhost/api/threads/delete/${threadId}/${postId}`,{
         withCredentials:true}).catch((err)=>{
         console.log(err)
     })
@@ -77,21 +104,37 @@ async function goToThread(id){
 async function goToRoot(){
   router.push(`/threads`)
 }
+async function goToPost(postId){
+    router.push(`/thread/${threadId}/post/${postId}`)
+}
 async function goToModpanel(threadId){
     router.push(`/modpanel/${threadId}`)
 }
 
-async function nextPage(){
-    lastPage.value++
-    localStorage.setItem("lastPage",lastPage.value)
-    getThreads(lastPage.value)
+async function nextThreadPage(){
+    lastThreadPage.value++
+    localStorage.setItem("lastThreadPage",lastThreadPage.value)
+    getThreads(lastThreadPage.value)
 }
 
-async function prevPage(){
-    if(lastPage.value>1){
-        lastPage.value--
-        localStorage.setItem("lastPage",lastPage.value)
-        getThreads(lastPage.value)
+async function prevThreadPage(){
+    if(lastThreadPage.value>1){
+        lastThreadPage.value--
+        localStorage.setItem("lastThreadPage",lastThreadPage.value)
+        getThreads(lastThreadPage.value)
+    }
+}
+async function nextPostPage(){
+    lastPostPage.value++
+    localStorage.setItem("lastPostPage",lastPostPage.value)
+    getPosts(lastPostPage.value)
+}
+
+async function prevPostPage(){
+    if(lastPostPage.value>1){
+        lastPostPage.value--
+        localStorage.setItem("lastPostPage",lastPostPage.value)
+        getPosts(lastPostPage.value)
     }
 }
 
@@ -105,47 +148,20 @@ async function getMyData(){
 }
 async function close(){
     const fetch = axios.post(`https://localhost/api/threads/close/${threadId}`,{},{withCredentials:true}).then(()=>{
-        getThreads(lastPage.value)
+        getThreads(lastThreadPage.value)
     }).catch((err)=>{
         console.log(err)
     })
-}
-async function getLikes(){
-    const fetch = axios.get(`https://localhost/api/threads/${threadId}/likes`,{withCredentials:true}).then((res)=>{
-        likes.value = res.data.likes
-    }).catch((err)=>{
-        console.log(err)
-    })
-}
-async function like(){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId}/likes`,{},{withCredentials:true}).catch((err)=>{
-        console.log(err)
-    })
-}
-function setEditing(){
-  isEditing.value = true
 }
 async function hide(id){
   const fetch = axios.post(`https://localhost/api/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
-async function editThread(id){
-    const fetch = axios.post(`https://localhost/api/threads/edit/${id}`,{
-        title: title.value,
-        content: content.value,
-        tags: tags.value},
-        {withCredentials:true}).then(()=>{
-          isEditing.value = false
-        }).catch((err)=>{
-        console.log(err)
-    })
-}
 onMounted(()=>{
-    getThreads(lastPage.value)
+    getThreads(lastThreadPage.value)
     getMyData()
-    getLikes()
-    hljs.highlightAll()
+    getPosts(lastPostPage.value)
 })
 
 watch(
@@ -158,274 +174,222 @@ watch(
 
 </script>
 <template>
-  <div class="thread-container">
-
-    <ul v-if="!isEditing" class="child-list">
-      <li v-for="thread2 in threads" :key="thread2._id" class="child-item">
-        <div class="child-info">
-          <div class="title">{{ thread2.title }}</div>
-        </div>
-
-        <div class="child-actions">
-          <button v-if="(!blockedUsersId.includes(me._id) && ((thread2.rootModId || []).includes(me._id) || thread.modsThreadId.includes(me._id)) || me.isAdmin)" class="btn delete" @click="deleteThread(thread2._id)">Delete</button>
-          <button class="btn" @click="goToThread(thread2._id)">See more</button>
-          <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button>
-        </div>
-      </li>
-    </ul>
-    <div class="pagination">
-      <button class="btn" v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-      <button class="btn" v-if="tdamount >= 3" @click="nextPage()">Next page</button>
+  <div class="page" v-if="!isAddingThread && !isAddingPost">
+    <div class="back-nav">
+      <button v-if="thread._id === null" class="btn-nav" @click="goToRoot()">Go to root thread</button>
+      <button v-else class="btn" @click="goToThread(thread.parentThreadId)">Go to previous thread</button>
     </div>
-    <div v-if="!isEditing" class="back-nav">
-      <button v-if="thread.parentThreadId === null" class="btn-nav" @click="goToRoot()">Go to previous thread</button>
-      <button v-else class="btn-nav" @click="goToThread(thread.parentThreadId)">Go to previous thread</button>
-    </div>
-
-    <button
+  <button
       v-if="!thread.isClosed && (me.isAdmin || (thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) && !isEditing"
       class="btn-wide warn"
       @click="close()"
     >
       Close thread
-    </button>
+  </button>
+  <button
+      v-if="(me.isAdmin || (thread.rootModId || []).includes(me._id))"
+      class="btn-wide warn"
+      @click="goToModpanel(threadId)"
+    >
+      Go to modpanel
+  </button>
+  <div class="thread-container">
+      <div v-for="thread2 in threads" :key="thread2._id" class="child-item">
+        <div class="child-info">
+          <div class="title">{{ thread2.title }}</div>
+        </div>
 
+        <div class="child-actions">
+          <!-- <button v-if="(!blockedUsersId.includes(me._id) && ((thread2.rootModId || []).includes(me._id) || thread.modsThreadId.includes(me._id)) || me.isAdmin)" class="btn delete" @click="deleteThread(thread2._id)">Delete</button> -->
+          <button class="btn" @click="goToThread(thread2._id)">See more</button>
+          <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button>
+        </div>
+      </div>
+    <div class="pagination">
+      <button class="btn" v-if="lastThreadPage !== 1" @click="prevThreadPage()">Previous page</button>
+      <button class="btn" v-if="tdamount >= 10" @click="nextThreadPage()">Next page</button>
+    </div>
     <button
-      v-if="thread.isClosed && (me.isAdmin || thread.rootModId.includes(me._id) || (thread.modsThreadId || []).includes(me._id)) && !isEditing"
+      v-if="thread.isClosed && (me.isAdmin || (thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) && !isEditing"
       class="btn-wide"
       @click="close()"
     >
       Reopen thread
     </button>
+    <button class="btn" @click="isAddingThread = !isAddingThread">Add new subthread</button>
+  </div>
+  <div class="posts-container">
+      <div v-for="post in posts" :key="post._id" class="child-item">
+        <div class="child-info">
+          <div class="title">{{ post.title }}</div>
+        </div>
 
-    <div class="thread-info" v-if="!isEditing">
-      <p class="likes"><strong>Likes:</strong> {{ likes }}</p>
-      <HighlightedText v-if="thread.content" :text="thread.content" class="thread-content" />
-      <p class="tags"><strong>Tags:</strong> {{ thread.tags }}</p>
-      <div class="thread-buttons">
-        <button class="btn accent" @click="like()">Like</button>
-        <button class="btn" v-if="me.isAdmin || (thread.rootModId || []).includes(me._id)" @click="setEditing()">Edit</button>
-        <button class="btn manager" v-if="me.isAdmin || (thread.modsThreadId || []).includes(me._id)" @click="goToModpanel(threadId)">Manage</button>
+        <div class="child-actions">
+          <button class="btn" @click="goToPost(post._id)">See more</button>
+          <button v-if="(!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || thread.modsThreadId.includes(me._id)) || me.isAdmin)" class="btn delete" @click="deletePost(post._id)">Delete</button>
+        </div>
       </div>
-    </div>
-
-    <div v-if="!thread.isClosed && !blockedUsersId.includes(me._id) && !isEditing" class="reply-box">
+      <div class="pagination">
+        <button class="btn" v-if="lastPostPage !== 1" @click="prevPostPage()">Previous page</button>
+        <button class="btn" v-if="postsAmount >= 40" @click="nextPostPage()">Next page</button>
+      </div>
+      <button class="btn" @click="isAddingPost = !isAddingPost">Add new post</button>
+  </div>
+  </div>
+  <div class="page" v-else-if="isAddingThread">
+    <button class="btn" @click="isAddingThread = false">Back</button>
+    <div v-if="!thread.isClosed && (thread.rootModId || []).includes(me._id) && !blockedUsersId.includes(me._id) && !isAddingPost" class="reply-box">
       <form @submit.prevent="addThread" class="reply-form">
         <input v-model="title" placeholder="Add title" required />
-        <input v-model="content" placeholder="Add content" required />
         <input v-model="tags" placeholder="Add tags" required />
-        <button class="btn accent" type="submit">Add thread</button>
+        <button class="btn-wide" type="submit">Add thread</button>
       </form>
     </div>
-
-    <div v-if="isEditing && (me.isAdmin || (thread.rootModId || []).includes(me._id))" class="edit-box">
-      <form @submit="editThread(thread._id)" class="edit-form">
-        <div class="edit-group">
-          <strong>Current title:</strong> {{ thread.title }}
-          <input v-model="title" placeholder="Change title" />
-        </div>
-
-        <div class="edit-group">
-          <strong>Current content:</strong> {{ thread.content }}
-          <textarea v-model="content" placeholder="Change content"></textarea>
-        </div>
-
-        <div class="edit-group">
-          <strong>Current tags:</strong> {{ thread.tags }}
-          <input v-model="tags" placeholder="Change tags" />
-        </div>
-
-        <button class="btn accent" type="submit">Submit editing</button>
+  </div>
+  <div class="page" v-else-if="isAddingPost">
+    <button class="btn" @click="isAddingPost = false">Back</button>
+    <div v-if="!thread.isClosed && !blockedUsersId.includes(me._id) && !isAddingThread" class="reply-box">
+      <form @submit.prevent="addPost" class="reply-form">
+        <input v-model="title" placeholder="Add title" required />
+        <textarea v-model="content" placeholder="Add content" required></textarea>
+        <button class="btn-wide" type="submit">Add post</button>
       </form>
     </div>
-
   </div>
 </template>
 
 <style scoped>
-.thread-container {
-  max-width: 800px;
+.page{
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 18px 16px;
+
+  display: grid;
+  grid-template-columns: 360px 1fr; 
+  gap: 28px;
+  align-items: start;
 }
 
-.child-list {
-  list-style: none;
+@media (max-width: 900px){
+  .page{
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.back-nav,
+.btn-wide.warn{
+  grid-column: 1 / -1;
+}
+
+.thread-container,
+.posts-container {
+  background: transparent;
+  border: none;
   padding: 0;
-  margin: 0 0 20px;
+  min-height: unset;
 }
-
-.child-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--card);
-  padding: 16px 18px;
-  border-radius: 16px;
+input, textarea {
+  width: 100%;
+  background: var(--bg-soft);
   border: 1px solid var(--border);
-  margin-bottom: 14px;
-  transition: background-color 0.2s;
-}
-
-.child-item:hover {
-  background-color: #1d1d1d;
-}
-
-.child-info .title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: 12px;
+  border-radius: 12px;
   color: var(--text);
+  font-size: 0.95rem;
 }
 
-.child-actions {
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #444;
+}
+
+.child-item{
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 12px;
+  margin-bottom: 10px;
+}
+
+.pagination{
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
   display: flex;
+  justify-content: center;
   gap: 10px;
 }
 
+.thread-container > .btn.accent,
+.posts-container > .btn.accent{
+  width: 100%;
+  margin-top: 10px;
+}
 .btn {
-  padding: 8px 14px;
-  background: #222;
+  padding: 7px 14px;
+  border-radius: 999px;
   border: 1px solid var(--border);
+  background: transparent;
   color: var(--text);
-  border-radius: 20px;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background-color 0.2s;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    transform 0.1s ease;
 }
 
 .btn:hover {
-  background-color: #333;
+  background: var(--bg-soft);
+  border-color: #3a3a3a;
 }
 
-.delete {
-  background: #2a0000;
-  border-color: #3d0000;
+.btn:active {
+  transform: translateY(1px);
 }
 
-.delete:hover {
-  background: #3d0000;
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.btn.accent {
+  background: var(--accent);
+  color: #000;
+  border-color: transparent;
+  font-weight: 700;
+}
+
+.btn.accent:hover {
+  opacity: 0.9;
+}
+
+.btn.delete,
+.btn.warn {
+  background: transparent;
+  border-color: #4a1a1a;
+  color: #ffb3b3;
+}
+
+.btn.delete:hover,
+.btn.warn:hover {
+  background: #2a0f0f;
+  border-color: #6a2a2a;
 }
 
 .btn-wide {
   width: 100%;
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 22px;
-}
-
-.warn {
-  background: #580000;
-  border-color: #700000;
-}
-
-.warn:hover {
-  background: #700000;
-}
-
-.thread-info {
-  background: var(--card);
-  border: 1px solid var(--border);
-  padding: 20px;
-  border-radius: 18px;
-  margin-top: 20px;
-}
-
-.likes {
-  color: var(--text-soft);
-}
-
-.tags {
-  margin-top: 12px;
-  color: var(--text-soft);
-}
-
-.thread-buttons {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.manager {
-  background: #111;
-}
-
-.accent {
-  background: var(--accent);
-  color: #000;
-  border-color: var(--accent);
-  font-weight: 600;
-}
-
-.accent:hover {
-  opacity: 0.85;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin: 20px 0;
-}
-
-.btn-nav {
-  padding: 10px 18px;
-  background: var(--accent);
-  color: #000;
-  border-radius: 24px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.btn-nav:hover {
-  opacity: 0.85;
-}
-
-.reply-box,
-.edit-box {
-  background: var(--card);
-  border: 1px solid var(--border);
-  padding: 22px;
-  border-radius: 18px;
-  margin-top: 20px;
-}
-
-.reply-form,
-.edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.reply-form input,
-.edit-form input {
-  padding: 12px;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text);
-}
-
-textarea {
-  padding: 12px;
-  min-height: 120px;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text);
-  resize: vertical;
-}
-
-textarea:focus,
-input:focus {
-  outline: none;
-  border-color: #555;
-}
-
-.edit-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: 700;
 }
 </style>

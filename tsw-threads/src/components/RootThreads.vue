@@ -9,7 +9,6 @@ const router = useRouter()
 const tdamount = ref(0)
 const threads = ref([])
 const title = ref('')
-const content = ref('')
 const tags = ref('')
 const me = ref({})
 const lastPage = ref(Number(localStorage.getItem("lastRootPage")) || 1)
@@ -21,10 +20,10 @@ socket.on("threadAdded",(thread)=>{
     }
     tdamount.value+=1
 })
-socket.on("threadDeleted",(object)=>{
-  threads.value = threads.value.filter((x)=>x._id !== object._id)
-  tdamount.value-=1
-})
+// socket.on("threadDeleted",(object)=>{
+//   threads.value = threads.value.filter((x)=>x._id !== object._id)
+//   tdamount.value-=1
+// })
 socket.on('adminMessage',(info)=>{
   if(adminMessages.value>5){
     adminMessages.value.pop()
@@ -44,7 +43,7 @@ async function getMyData(){
 }
 
 async function getThreads(page){
-    const fetch = axios.get(`https://localhost/api/threads/root/${page}/${3}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/threads/root/${page}/${30}`,{withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
         tdamount.value = res.data.threads.length
     }).catch((err)=>{
@@ -56,17 +55,16 @@ async function getThreadDetails(id){
     router.push(`/thread/${id}`)
 }
 
-async function deleteThread(id){
-    const fetch = axios.delete(`https://localhost/api/threads/delete/${id}`,{
-        withCredentials:true}).catch((err)=>{
-        console.log(err)
-    })
-}
+// async function deleteThread(id){
+//     const fetch = axios.delete(`https://localhost/api/threads/delete/${id}`,{
+//         withCredentials:true}).catch((err)=>{
+//         console.log(err)
+//     })
+// }
 
 async function addThread(){
     const fetch = axios.post('https://localhost/api/threads/root/',{
         title: title.value,
-        content: content.value,
         tags: tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
@@ -112,7 +110,7 @@ onMounted(()=>{
 
         <div class="thread-actions">
           <button @click="getThreadDetails(thread._id)">See more</button>
-          <button v-if="me.isAdmin || thread.creatorId === me._id" @click="deleteThread(thread._id)">Delete</button>
+          <!-- <button v-if="me.isAdmin || thread.creatorId === me._id" @click="deleteThread(thread._id)">Delete</button> -->
           <button class="btn" v-if="me.isAdmin" @click="hide(thread._id)">Hide thread</button>
         </div>
       </li>
@@ -123,13 +121,12 @@ onMounted(()=>{
     <div>
       <div class="pagination">
         <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-        <button v-if="tdamount >= 3" @click="nextPage()">Next page</button>
+        <button v-if="tdamount >= 30" @click="nextPage()">Next page</button>
       </div>
 
-      <div class="form-wrapper">
+      <div v-if="me.isAdmin" class="form-wrapper">
         <form @submit.prevent="addThread">
           <input v-model="title" placeholder="Add title" required />
-          <textarea v-model="content" placeholder="Add content" required></textarea>
           <input v-model="tags" placeholder="Add tags" required />
           <button type="submit">Add Thread</button>
         </form>

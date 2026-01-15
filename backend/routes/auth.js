@@ -57,7 +57,7 @@ router.post('/login', async (req, res,next) => {
                 const testPassword = crypto.pbkdf2Sync(req.body.password, user.salt, 310000, 32, HASH_FUNCTION) 
                 if(crypto.timingSafeEqual(user.password, testPassword)){
                     const accessToken = jwt.sign({
-                        id: user._id,isAdmin:user.isAdmin,isAcceptedByAdmin:user.isAcceptedByAdmin},
+                        id: user._id,login:user.login,isAdmin:user.isAdmin,isAcceptedByAdmin:user.isAcceptedByAdmin},
                         SECRET,
                         { expiresIn: '1d' });
                         res.cookie("jwt", accessToken, { httpOnly: true, secure:true,sameSite:"none" ,maxAge: 1000 * 60 * 60 * 24});

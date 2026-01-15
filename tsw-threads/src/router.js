@@ -8,7 +8,7 @@ import Users from './pages/Users.vue'
 import ChildThreadsPage from './pages/ChildThreadsPage.vue'
 import FoundByTag from './components/FoundByTag.vue'
 import WaitingRoom from './components/WaitingRoom.vue'
-
+import PostPage from './components/PostPage.vue'
 export default createRouter({
   history: createWebHistory(),
   routes: [
@@ -17,6 +17,7 @@ export default createRouter({
     { path: '/myprofile', component: MyProfile },
     { path: '/thread/:threadId', component: ChildThreadsPage },
     { path: '/threads', component: RootThreads },
+    { path: '/thread/:threadId/post/:postId',component:PostPage},
     { path: '/modpanel/:threadId', component: ThreadModeratorPanel },
     { path: '/users', component: Users },
     { path: '/searched/:tag', component:FoundByTag},

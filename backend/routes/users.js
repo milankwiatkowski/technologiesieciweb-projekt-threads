@@ -16,20 +16,33 @@ function getTime(){
         second: '2-digit'
     });
 }
-
-router.get('/',isAdmin, async (req, res) => {
+router.get('/find/:loginUser',isAdmin, async (req, res) => {
+    console.log(`INFO User ${req.user.login} is trying to find user ${req.params.loginUser} ${getTime()}`)
+    const login = req.params.loginUser
+    try{
+        const foundUser = await User.findOne({login:login}).skip()
+        console.log(`INFO User ${req.user.login} successfully found user ${req.params.loginUser} ${getTime()}`)
+        return res.status(200).json({user:foundUser})
+    }
+    catch (err){
+        console.log(`ERROR ${err} ${getTime()}`)
+        return res.status(400)
+    }
+});
+router.get(`/:page/:limit`,isAdmin, async (req, res) => {
+    const page = req.params.page
+    const limit = req.params.limit
     console.log(`INFO User ${req.user.login} is requesting the list of all users ${getTime()}`)
     try{
-        const users =  await User.find()
+        const users =  await User.find().skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
         console.log(`INFO User ${req.user.login} was granted the list of all users ${getTime()}`)
-        return res.json({users:users,status:200})
+        return res.status(200).json({users:users})
     }
     catch(err){
         console.log(`ERROR ${err} ${getTime()}`)
-        return res.json({message:"Error occurred",status:400})
+        return res.status(400).json({message:"Error occurred"})
     }
 });
-
 router.delete('/:idUser',isAdmin, async (req, res) => {
     console.log(`INFO User ${req.user.login} is trying to delete user ${req.params.idUser} ${getTime()}`)
     try{
@@ -46,18 +59,6 @@ router.delete('/:idUser',isAdmin, async (req, res) => {
     }
 });
 
-router.get('/find/:idUser', async (req, res) => {
-    console.log(`INFO User ${req.user.login} is trying to find user ${req.params.idUser} ${getTime()}`)
-    const id = req.params.idUser
-    try{
-        const foundUser = await User.findById(id)
-        console.log(`INFO User ${req.user.login} successfully found user ${req.params.idUser} ${getTime()}`)
-        res.render('userFound', {id:foundUser._id,isUserAdmin:foundUser.isAdmin,login:foundUser.login,isAdmin: req.user && req.user.isAdmin})}
-    catch (err){
-        console.log(`ERROR User ${req.params.idUser} not found ${getTime()}`)
-        res.render('userNotFound', {id:id})
-    }
-});
 
 router.post('/patch/:idUser', async (req, res) => {
     console.log(`INFO User ${req.user.login} is trying to patch user ${req.params.idUser} ${getTime()}`)
