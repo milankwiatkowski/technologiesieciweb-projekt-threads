@@ -1,23 +1,15 @@
 <script setup>
-import {onMounted, ref,watch} from "vue"
+import {onMounted,onUnmounted, ref,computed} from "vue"
 import {useRoute} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
 const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 const route = useRoute()
 
-const threadId = route.params.threadId
+const threadId = computed(() => route.params.threadId)
 const thread = ref({})
 const me = ref({})
 const blockedUsersId = ref([])
-socket.on('blockedUser',(id)=>{
-    blockedUsersId.value.unshift(id)
-    console.log(blockedUsersId.value)
-})
-socket.on('unblockedUser',(id)=>{
-    blockedUsersId.value = blockedUsersId.value.filter((x)=> x !== id)
-    console.log(blockedUsersId.value)
-})
 async function getMyData(){
     const fetch = axios.get('https://localhost/api/auth/me',{withCredentials:true}).then((res)=>[
         me.value = res.data.user,
@@ -27,7 +19,7 @@ async function getMyData(){
 }
 
 async function getThread(){
-    const fetch = axios.get(`https://localhost/api/threads/sub/${threadId}/${1}/${10}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/threads/sub/${threadId.value}/${1}/${10}`,{withCredentials:true}).then((res)=>{
         thread.value = res.data.thread
         blockedUsersId.value = res.data.thread.blockedId
     }).catch((err)=>{
@@ -36,32 +28,42 @@ async function getThread(){
 }
 
 async function blockUser(id){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId}/block/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/block/${id}`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function unblockUser(id){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId}/unblock/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/unblock/${id}`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function giveMod(id){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId}/givemod/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/givemod/${id}`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function takeMod(id){
-    const fetch = axios.delete(`https://localhost/api/threads/${threadId}/givemod/${id}`,{withCredentials:true}).catch((err)=>{
+    const fetch = axios.delete(`https://localhost/api/threads/${threadId.value}/givemod/${id}`,{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
-
+function onBlockedUser(id){
+    blockedUsersId.value.unshift(id)
+}
+function onUnblockedUser(id){
+    blockedUsersId.value = blockedUsersId.value.filter((x)=> x !== id)
+}
 onMounted(()=>{
-    getMyData()
-    getThread()
+  getMyData()
+  getThread()
+  socket.on("blockedUser", onBlockedUser)
+  socket.on("unblockedUser", onUnblockedUser)
 })
-
-
+onUnmounted(() => {
+  socket.off("blockedUser", onBlockedUser)
+  socket.off("unblockedUser", onUnblockedUser)
+  socket.disconnect()
+})
 </script>
 
 <template>
@@ -78,12 +80,24 @@ onMounted(()=>{
         </div>
 
         <div class="actions">
-          <button class="btn" v-if="!blockedUsersId.includes(author.id)" @click="blockUser(author.id)">Block user</button>
-
-          <button class="btn" v-else @click="unblockUser(author.id)">Unblock user</button>
-          <div v-if="!thread.rootModId.includes(author.id)">
-            <button class="btn" v-if="!thread.modsThreadId.includes(author.id)" @click="giveMod(author.id)" >Give mod</button>
-            <button class="btn" v-if="thread.modsThreadId.includes(author.id)" @click="takeMod(author.id)">Take mod</button>
+          <button class="btn" v-if="!blockedUsersId.includes(author.id) && 
+                                    !blockedUsersId.includes(me._id) &&
+                                    (me.isAdmin || thread.rootModId.includes(me._id) || (thread.modsThreadId.includes(me._id) && thread.modsThreadId.includes(author.id)))" @click="blockUser(author.id)">Block user</button>
+          <button class="btn" v-else-if="blockedUsersId.includes(author.id) && 
+                                        !blockedUsersId.includes(me._id) &&
+                                        (me.isAdmin || thread.rootModId.includes(me._id) || thread.modsThreadId.includes(me._id))" @click="unblockUser(author.id)">Unblock user</button>
+          <div v-if="(thread.rootModId || thread.modsThreadId).includes(me._id) || me.isAdmin">
+            <button class="btn" v-if="author.id !== me._id &&  
+                                      thread.creatorId !== author.id &&
+                                      me.isAdmin ||
+                                      (thread.rootModId.includes(me._id) && ((thread.rootModId.includes(author.id) || thread.modsThreadId.includes(author.id)))) ||
+                                      (thread.modsThreadId.includes(me._id) && !thread.rootThreadId.includes(author.id))" 
+                                      @click="giveMod(author.id)" >Give mod</button>
+            <button class="btn" v-else-if="author.id !== me._id &&  
+                                          thread.creatorId !== author.id &&
+                                          me.isAdmin ||
+                                          (thread.rootModId.includes(me._id) || 
+                                          (thread.modsThreadId.includes(me._id) && thread.modsThreadId.includes(author.id)))" @click="takeMod(author.id)">Take mod</button>
           </div>
         </div>
       </li>

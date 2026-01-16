@@ -5,6 +5,7 @@ const userSchema = new Schema({
     isAdmin: Boolean,
     login: String,
     registrationDate: String,
+    isRootMod:Boolean,
     password: Buffer,
     salt: Buffer,
     modOfThreadsId:[Schema.Types.ObjectId],

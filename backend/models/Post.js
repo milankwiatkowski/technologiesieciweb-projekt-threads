@@ -7,6 +7,7 @@ const postSchema = new Schema({
     parentThreadId: {
         type: Schema.Types.ObjectId,
         default: null},
+    refersToPost:Schema.Types.ObjectId,
     creatorId: Schema.Types.ObjectId,
     creatorLogin: String,
     userLikesId:[Schema.Types.ObjectId],

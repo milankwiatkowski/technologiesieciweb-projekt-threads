@@ -28,12 +28,10 @@ socket.on("subthreadAdded",(subthread)=>{
     }
 })
 
-socket.on("threadDeleted",(object)=>{
-  threads.value = threads.value.filter((x)=>x._id !== object._id)
-})
+
 async function getThreads(page){
   console.log(tag)
-    const fetch = axios.get(`https://localhost/api/threads/find/${tag}/${page}/${4}`,{withCredentials:true}
+    const fetch = axios.get(`https://localhost/api/threads/find/${tag}/${page}/${30}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
         console.log(res.data.threads)

@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "socket.io": "^4.8.1",
     "axios": "^1.13.2",
+    "cookie": "^1.1.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -14,13 +14,14 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
-    "sass": "^1.94.0"
+    "sass": "^1.94.0",
+    "socket.io": "^4.8.1",
+    "validator": "^13.15.26"
   },
   "name": "backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

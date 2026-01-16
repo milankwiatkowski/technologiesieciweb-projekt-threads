@@ -1,5 +1,5 @@
 <script setup>
-import {ref, onMounted} from "vue"
+import {ref, onMounted, onUnmounted,watch} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
@@ -14,26 +14,9 @@ const me = ref({})
 const lastPage = ref(Number(localStorage.getItem("lastRootPage")) || 1)
 const adminMessages = ref([])
 
-socket.on("threadAdded",(thread)=>{
-    if(threads.value.length<3){
-      threads.value.push(thread)
-    }
-    tdamount.value+=1
-})
-// socket.on("threadDeleted",(object)=>{
-//   threads.value = threads.value.filter((x)=>x._id !== object._id)
-//   tdamount.value-=1
-// })
-socket.on('adminMessage',(info)=>{
-  if(adminMessages.value>5){
-    adminMessages.value.pop()
-    adminMessages.value.unshift(info)
-  }
-  else{
-    adminMessages.value.unshift(info)
-  }
-})
-
+async function goToRootModpanel(){
+    router.push(`/rootModpanel`)
+}
 async function getMyData(){
     const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
@@ -93,9 +76,43 @@ async function hide(id){
 // async function deleteMany(){
 //   const fetch = axios.post('https://localhost:3000/threads/deletemany',{},{withCredentials:true}).catch((err)=>{console.log(err)})
 // }
+function printAdminMessage(info){
+  if(adminMessages.value.length>5){
+    adminMessages.value.pop()
+    adminMessages.value.unshift(info)
+  }
+  else{
+    adminMessages.value.unshift(info)
+  }
+}
+function addThreadSocket(thread){
+    if(threads.value.length<40){
+      threads.value.push(thread)
+    }
+    tdamount.value+=1
+}
+function deleteThreadSocket(thread){
+    threads.value = threads.value.filter((x) => x._id !== thread._id)
+    tdamount.value-=1
+}
 onMounted(()=>{
-    getThreads(lastPage.value)
-    getMyData()
+  socket.on("threadAdded",addThreadSocket)
+  socket.on("threadDeleted",deleteThreadSocket)
+  socket.on("adminMessage",printAdminMessage)
+  socket.emit("thread:join",{threadId:'root'})
+  getThreads(lastPage.value)
+  getMyData()
+})
+onUnmounted(()=>{
+  socket.off("adminMessage",printAdminMessage)
+  socket.off("threadAdded",addThreadSocket)
+  socket.off("threadDeleted",deleteThreadSocket)
+  socket.emit("thread:leave",{threadId:'root'})
+  socket.disconnect()
+  localStorage.setItem("lastRootPage",1)
+})
+watch(lastPage, (newPage)=>{
+  getThreads(newPage)
 })
 </script>
 <template>
@@ -115,16 +132,21 @@ onMounted(()=>{
         </div>
       </li>
     </ul>
-
+    <button
+      v-if="me.isAdmin || me.isRootMod"
+      class="btn-wide warn"
+      @click="goToRootModpanel()"
+    >
+      Go to root modpanel
+  </button>
     <p v-else-if="threads && threads.length === 0">No threads.</p>
-    <p v-else>Loading...</p>
     <div>
       <div class="pagination">
         <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
         <button v-if="tdamount >= 30" @click="nextPage()">Next page</button>
       </div>
 
-      <div v-if="me.isAdmin" class="form-wrapper">
+      <div v-if="me.isAdmin || me.isRootMod" class="form-wrapper">
         <form @submit.prevent="addThread">
           <input v-model="title" placeholder="Add title" required />
           <input v-model="tags" placeholder="Add tags" required />

@@ -8,6 +8,8 @@ const {isAuthenticated, isAcceptedByAdmin} = require('./routes/middleware')
 const passport = require('passport')
 const {Server} = require("socket.io")
 const http = require("http")
+const cookie = require("cookie")
+const jwt = require('jsonwebtoken');
 app.use(cookieParser());
 app.use(cors({
     origin:"https://localhost",
@@ -20,7 +22,49 @@ const io = new Server(server,{
         credentials:true
     }
 })
+function socketCookieExtractor(socket) {
+  const header = socket.request?.headers?.cookie
+  if (!header) return null
+
+  const parsed = cookie.parse(header)
+  return parsed.jwt || null
+}
+io.use((socket,next)=>{
+    try{
+        const token = socketCookieExtractor(socket)
+        if(!token){
+            return next(new Error("Unauthorized"))
+        }
+        const payload = jwt.verify(token,process.env.SECRET)
+        socket.user = payload
+        return next()
+    }
+    catch (err){
+        return next(new Error("Unauthorized"))
+    }
+})
 app.set('io',io)
+io.on("connection",(socket)=>{
+    if(socket.user.isAdmin){
+        socket.join('admins')
+        socket.join('adminsChat')
+    }
+    else{
+        socket.join('users')
+    }
+    socket.on("thread:join",({threadId})=>{
+        socket.join(`thread:${threadId}`)
+    })
+    socket.on("thread:leave",({threadId})=>{
+        socket.leave(`thread:${threadId}`)
+    })
+    socket.on("post:join",({postId})=>{
+        socket.join(`post:${postId}`)
+    })
+    socket.on("post:leave",({postId})=>{
+        socket.leave(`post:${postId}`)
+    })
+})
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.set("trust proxy", 1);
@@ -38,9 +82,6 @@ const dbConnData = {
     port: parseInt(process.env.MONGO_PORT) || 27017,
     database: process.env.MONGO_DATABASE || 'appdb'
 };
-io.on("connection",(socket)=>{
-    console.log("user connected")
-})
 // Do kontaktu z serwerem MongoDB wykorzystamy bibliotekę Mongoose
 const mongoose = require('mongoose');
 

@@ -38,7 +38,7 @@ async function sendRegister(){
     <form class="register-form" @submit.prevent="sendRegister">
       <h2>Create your account</h2>
 
-      <input v-model="login" placeholder="Your email as login" required />
+      <input type="email" v-model="login" placeholder="Your email as login" required />
       <input v-model="password" type="password" placeholder="Your password" required />
       <input v-model="repeatedpassword" type="password" placeholder="Repeat your password" required />
 

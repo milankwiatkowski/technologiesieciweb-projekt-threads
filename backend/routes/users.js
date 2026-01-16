@@ -92,7 +92,7 @@ router.post('/patch/:idUser', async (req, res) => {
             }
             console.log(`INFO User ${req.user.id} successfully patched user ${req.params.idUser} ${getTime()}`)
             const user = await User.findById(req.params.idUser)
-            req.app.get("io").emit('user',user)
+            req.app.get("io").emit('user',user) //TODO
             return res.json({status:200})
         }
     }
@@ -118,8 +118,8 @@ router.post(`/toBeAccepted/:id`,isAdmin, async (req, res,next) => {
         const user = await User.findByIdAndUpdate(req.params.id,
             { $set: {isAcceptedByAdmin:true}},
             { new:true, runValidators:true})
-        req.app.get('io').emit('userAccepted',user)
-        req.app.get('io').emit('adminMessage',`INFO - User ${user.login} was accepted!`)
+        req.app.get('io').to('admins').emit('userAccepted',user)
+        req.app.get('io').to('adminsChat').emit('adminMessage',`INFO - User ${user.login} was accepted!`)
         return res.json({user:user,status:200})
     }
     catch(err){
@@ -131,8 +131,8 @@ router.post(`/notToBeAccepted/:id`,isAdmin, async (req, res,next) => {
     console.log(`INFO Admin ${req.user.login} is not accepting user ${req.params.id} ${getTime()}`)
     try{
         const user = await User.findByIdAndDelete(req.params.id)
-        req.app.get('io').emit('userNotAccepted',user)
-        req.app.get('io').emit('adminMessage',`INFO - User ${user.login} was denied!`)
+        req.app.get('io').to('admins').emit('userNotAccepted',user)
+        req.app.get('io').to('adminsChat').emit('adminMessage',`INFO - User ${user.login} was denied!`)
         return res.json({user:user,status:200})
     }
     catch(err){
@@ -146,7 +146,7 @@ router.post(`/giveAdmin/:id`,isAdmin,async(req,res,next)=>{
         const user = await User.findByIdAndUpdate(req.params.id,
             { $set: {isAdmin:true}},
             { new:true, runValidators:true})
-        req.app.get('io').emit('adminAdded',user)
+        req.app.get('io').to('admins').emit('adminAdded',user)
         return res.json({user:user,status:200})
     }
     catch(err){

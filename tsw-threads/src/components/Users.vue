@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, ref} from 'vue'
+import {onMounted,onUnmounted, ref, watch} from 'vue'
 import axios from 'axios'
 import {useRouter} from 'vue-router'
 import {io} from "socket.io-client"
@@ -14,19 +14,14 @@ const usersToShow = ref([])
 const admins = ref([])
 const login = ref('')
 const ifSearched = ref(false)
-socket.on('userAccepted',(user)=>{
-    usersToBeAccepted.value = usersToBeAccepted.value.filter((x)=> x._id !== user._id)
-    usersToShow.value.push(user)
-})
-socket.on('addUserToBeAccepted',(user)=>{
-    usersToBeAccepted.value.push(user)
-})
-socket.on(`adminAdded`,(user)=>{
-  admins.value.push(user)
-})
-socket.on(`userNotAccepted`,(user)=>{
-  usersToBeAccepted.value = usersToBeAccepted.value.filter((x) => x._id !== user._id)
-})
+const me = ref({})
+async function getMyData(){
+    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
+        me.value = res.data.user
+    }).catch((err)=>{
+            console.log(err)
+    })
+}
 async function getUsers(){
     const fetch = axios.get(`https://localhost/api/users/${userPage.value}/${40}`,{withCredentials:true}).then((res)=>{
         users.value = res.data.users
@@ -85,14 +80,51 @@ async function prevPage(){
         getUsers(userPage.value)
     }
 }
+function addAdmin(user){
+  admins.value.push(user)
+}
+function userDeniedAccept(user){
+  usersToBeAccepted.value = usersToBeAccepted.value.filter((x) => x._id !== user._id)
+}
+function userAccepted(user){
+  usersToBeAccepted.value = usersToBeAccepted.value.filter((x) => x._id !== user._id)
+  usersToShow.value.push(user)
+}
+function userToBeAccepted(user){
+  usersToBeAccepted.value.push(user)
+}
+function adminMessagesListener(){
+    socket.on("userAccepted",userAccepted)
+    socket.on("userDeniedAccept",userDeniedAccept)
+    socket.on("addUserToBeAccepted",userToBeAccepted)
+    socket.on("adminAdded",addAdmin)
+}
+function detachAdminMessagesListener(){
+    socket.off("userAccepted",userAccepted)
+    socket.off("userDeniedAccept",userDeniedAccept)
+    socket.off("addUserToBeAccepted",userToBeAccepted)
+    socket.off("adminAdded",addAdmin)
+}
 onMounted(()=>{
-    getUsers()
-    getUsersToBeAccepted()
+    getMyData()
 })
-
+watch(
+  ()=>me.value?.isAdmin,
+  (isAdmin)=>{
+      detachAdminMessagesListener()
+      if (isAdmin){
+        getUsers()
+        getUsersToBeAccepted()
+        adminMessagesListener()
+    }
+})
+onUnmounted(() => {
+  detachAdminMessagesListener()
+  socket.disconnect()
+})
 </script>
 <template>
-  <div class="user-panel">
+  <div class="user-panel" v-if="me.isAdmin">
     <form @submit.prevent="getUser" class="reply-form">
         <input v-model="login" placeholder="Search for a user" required />
         <button class="btn-wide" type="submit">Search</button>
@@ -105,7 +137,7 @@ onMounted(()=>{
         <button v-if="!user.isAdmin" class="remove-btn" @click="deleteUser(user._id)">Remove user</button>
         <button v-if="!user.isAdmin" class="remove-btn" @click="giveAdmin(user._id)">Make {{ user.login }} an admin</button>
       </div>
-      <button class="btn" v-if="users.length > 1" @click="prevPage()">Previous page</button>
+      <button class="btn" v-if="userPage > 1" @click="prevPage()">Previous page</button>
       <button class="btn" v-if="users.length <= 40" @click="nextPage()">Next page</button>
     </div>
     </div>

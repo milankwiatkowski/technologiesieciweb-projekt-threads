@@ -1,32 +1,16 @@
 <script setup>
 import axios from "axios"
 import {io} from "socket.io-client"
-import { ref,onMounted } from "vue"
+import { ref,onUnmounted,onMounted, watch } from "vue"
 const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 const me = ref({})
 const adminMessages = ref([])
+function pushMsg(info){
+  if (!me.value?.isAdmin) return
 
-socket.on('adminMessage',(info)=>{
-  console.log(info)
-  if(adminMessages.value.length==5){
-    adminMessages.value.pop()
-    adminMessages.value.unshift(info)
-  }
-  else{
-    adminMessages.value.unshift(info)
-  }
-})
-
-socket.on('userAction',(info)=>{
-  if(adminMessages.value.length==5){
-    adminMessages.value.pop()
-    adminMessages.value.unshift(info)
-  }
-  else{
-    adminMessages.value.unshift(info)
-  }
-})
-
+  adminMessages.value.unshift(info)
+  if (adminMessages.value.length > 5) adminMessages.value.pop()
+}
 async function getMyData(){
     const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
@@ -34,8 +18,31 @@ async function getMyData(){
             console.log(err)
     })
 }
+function adminMessageListener(){
+    socket.on("adminMessage",pushMsg)
+}
+function detachMessageListener(){
+    socket.off("adminMessage",pushMsg)
+}
+
+watch(
+  ()=>me.value?.isAdmin,
+  (isAdmin)=>{
+    adminMessages.value = []
+    detachMessageListener()
+    if (isAdmin){
+      adminMessageListener()
+    }
+})
 onMounted(()=>{
-    getMyData()
+  getMyData()
+  if(me.value?.isAdmin){
+    adminMessageListener()
+  }
+})
+onUnmounted(() => {
+  detachMessageListener()
+  socket.disconnect()
 })
 </script>
 <template>

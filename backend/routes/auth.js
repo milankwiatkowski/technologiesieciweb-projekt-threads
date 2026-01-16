@@ -10,6 +10,7 @@ const path = require('node:path');
 const User = require(path.join(process.cwd(), 'models', 'User'));
 const { Strategy } = require('passport-jwt');
 const {isAuthenticated,isAdmin} = require('./middleware')
+const validator = require('validator')
 const cookieExtractor = req => {
     if (req && req.cookies) {
         return req.cookies.jwt;
@@ -57,7 +58,7 @@ router.post('/login', async (req, res,next) => {
                 const testPassword = crypto.pbkdf2Sync(req.body.password, user.salt, 310000, 32, HASH_FUNCTION) 
                 if(crypto.timingSafeEqual(user.password, testPassword)){
                     const accessToken = jwt.sign({
-                        id: user._id,login:user.login,isAdmin:user.isAdmin,isAcceptedByAdmin:user.isAcceptedByAdmin},
+                        id: user._id,login:user.login,isRootMod:user.isRootMod,isAdmin:user.isAdmin,isAcceptedByAdmin:user.isAcceptedByAdmin},
                         SECRET,
                         { expiresIn: '1d' });
                         res.cookie("jwt", accessToken, { httpOnly: true, secure:true,sameSite:"none" ,maxAge: 1000 * 60 * 60 * 24});
@@ -87,11 +88,15 @@ router.post('/login', async (req, res,next) => {
 router.post('/register', async (req, res,next) => {
     console.log(`INFO User ${req.body.login} is trying to register ${getTime()}`)
     try{
+        if(!validator.isEmail(req.body.login)){
+            return res.status(500).json({message:"Username has to be an email!"})
+        }
+        else{
         let salt = crypto.randomBytes(Number(SALT_BITS));
         const users = await User.find()
         if(users.length===0){
             crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                const user = new User({isAdmin:true,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate()})
+                const user = new User({isAdmin:true,password:hashedPassword,isRootMod:true,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate()})
                 if (err) { return next(err); }
                 console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
                 await user.save()
@@ -101,18 +106,19 @@ router.post('/register', async (req, res,next) => {
             const userFound = users.filter((x) => x.login === req.body.login)
             if(userFound.length===0){
                 crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                    const user = new User({isAdmin:false,password:hashedPassword,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
+                    const user = new User({isAdmin:false,password:hashedPassword,isRootMod:false,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
                     console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
                     if (err) { return next(err); }
                     await user.save()
-                    req.app.get('io').emit('adminMessage',`INFO - User ${req.body.login} is waiting to be accepted!`)
-                    req.app.get('io').emit('addUserToBeAccepted',user)
+                    req.app.get('io').to('adminsChat').emit('adminMessage',`INFO - User ${req.body.login} is waiting to be accepted!`)
+                    req.app.get('io').to('admins').emit('addUserToBeAccepted',user)
                     return res.json({message:"Registration successful!",status:200})})
             }
             else{
                 console.log(`INFO Username ${req.body.login} was already taken ${getTime()}`)
                 return res.status(500).json({message:"Username already taken"})
             }
+        }
         }
     }
     catch(err){
@@ -125,6 +131,7 @@ router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) 
         console.log(`INFO User ${req.user.login} is requesting authentication ${getTime()}`)
           const userData = {
             _id: req.user.id,
+            isRootMod: req.user.isRootMod,
             login: req.user.login,
             isAdmin: req.user.isAdmin,
             isAcceptedByAdmin: req.user.isAcceptedByAdmin,};
@@ -136,7 +143,7 @@ router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) 
 });
 router.post('/logout', (req, res, next) => {
     res.clearCookie('jwt',{httpOnly:true,secure:true,sameSite:'none'})
-    res.json({status:200})
+    return res.status(200).json({message:'ok'})
 });
 
 module.exports = router;
