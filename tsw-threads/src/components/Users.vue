@@ -138,7 +138,7 @@ onUnmounted(() => {
         <button v-if="!user.isAdmin" class="remove-btn" @click="giveAdmin(user._id)">Make {{ user.login }} an admin</button>
       </div>
       <button class="btn" v-if="userPage > 1" @click="prevPage()">Previous page</button>
-      <button class="btn" v-if="users.length <= 40" @click="nextPage()">Next page</button>
+      <button class="btn" v-if="users.length >= 40" @click="nextPage()">Next page</button>
     </div>
     </div>
     <div v-else-if="foundUser">

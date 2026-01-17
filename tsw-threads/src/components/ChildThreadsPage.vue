@@ -21,6 +21,7 @@ const threads = ref([])
 const thread = ref({})
 const title = ref('')
 const tags = ref('')
+const tagsPost = ref('')
 const blockedUsersId = ref([])
 async function getThreads(page){
     const fetch = axios.get(`https://localhost/api/threads/sub/${threadId.value}/${page}/${10}`,{withCredentials:true}
@@ -29,7 +30,6 @@ async function getThreads(page){
         thread.value = res.data.thread
         tdamount.value = res.data.threads.length
         blockedUsersId.value = thread.value.blockedId
-        console.log(thread.value.blockedId)
     }).catch((err)=>{
             console.log(err)
     })
@@ -52,7 +52,7 @@ async function addThread(){
 }
 async function addPost(){
     const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/post`,{
-        title: title.value, content: content.value},
+        title: title.value, tags: tagsPost.value, content: content.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
     })
@@ -107,7 +107,6 @@ async function prevPostPage(){
 async function getMyData(){
     const fetch = axios.get('https://localhost/api/auth/me',{withCredentials:true}).then((res)=>{
         me.value = res.data.user
-        console.log(me.value._id)
     }).catch((err)=>{
         console.log(err)
     })
@@ -209,8 +208,8 @@ watch(
   </button>
   <div class="page" v-if="!isAddingThread && !isAddingPost">
     <div class="back-nav">
-      <button v-if="thread._id === null" class="btn-nav" @click="goToRoot()">Go to root thread</button>
-      <button v-else class="btn" @click="goToThread(thread.parentThreadId)">Go to previous thread</button>
+      <button v-if="thread.parentThreadId === null" class="btn" @click="goToRoot()">Go to root thread</button>
+      <button v-else class="btn" @click="goToThread(thread.parentThreadId)">Go back</button>
     </div>
   <div class="thread-container">
       <div v-for="thread2 in threads" :key="thread2._id" class="child-item">
@@ -239,18 +238,19 @@ watch(
   <div class="posts-container">
       <div v-for="post in posts" :key="post._id" class="child-item">
         <div class="child-info">
+          <div class="creator">Author: {{ post.creatorLogin }}</div>
           <div class="title">{{ post.title }}</div>
-          <div class="creator">By: {{ post.creatorLogin }}</div>
+          <div class="tags">Tags: {{ post.tags }}</div>
         </div>
 
         <div class="child-actions">
           <button class="btn" @click="goToPost(post._id)">See more</button>
-          <button v-if="(!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin)" class="btn delete" @click="deletePost(post._id)">Delete</button>
+          <button v-if="(!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin)" class="btn delete" @click="hidePost(post._id)">Delete</button>
         </div>
       </div>
       <div class="pagination">
         <button class="btn" v-if="lastPostPage !== 1" @click="prevPostPage()">Previous page</button>
-        <button class="btn" v-if="postsAmount >= 40" @click="nextPostPage()">Next page</button>
+        <button class="btn" v-if="postsAmount >= 20" @click="nextPostPage()">Next page</button>
       </div>
       <button class="btn" @click="isAddingPost = !isAddingPost">Add new post</button>
   </div>
@@ -271,6 +271,7 @@ watch(
       <form @submit.prevent="addPost" class="reply-form">
         <input v-model="title" placeholder="Add title" required />
         <textarea v-model="content" placeholder="Add content" required></textarea>
+        <input v-model="tagsPost" placeholder="Add tags" />
         <button class="btn-wide" type="submit">Add post</button>
       </form>
     </div>
@@ -278,6 +279,19 @@ watch(
 </template>
 
 <style scoped>
+.btnback{
+    margin-bottom: 16px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: transparent;
+}
+.tags{
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
 .page{
   max-width: 1300px;
   margin: 0 auto;

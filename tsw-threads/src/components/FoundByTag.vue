@@ -1,5 +1,5 @@
 <script setup>
-import {ref,onMounted, watch} from "vue"
+import {ref,onMounted, onUnmounted, computed} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
 import {io} from "socket.io-client"
@@ -8,60 +8,41 @@ const socket = io("https://localhost",{withCredentials:true,transports: ["websoc
 const route = useRoute();
 const router = useRouter()
 
-const threads = ref([])
-const tag = route.params.tag
-
+const posts = ref([])
+const tag = computed(()=>route.params.tag)
 const me = ref({})
 const lastPage = ref(Number(localStorage.getItem("lastTagPage")) || 1)
 
-socket.on("subthreadAdded",(subthread)=>{
-    if(lastPage.value==1 && threads.value.length<5){
-      if(subthread.tags.includes(tag)){
-        threads.value.unshift(subthread)
-      }
-    }
-    else if(lastPage.value==1){
-        if(subthread.tags.includes(tag)){
-            threads.value.pop()
-            threads.value.unshift(subthread)
-        }
-    }
-})
 
-
-async function getThreads(page){
-  console.log(tag)
-    const fetch = axios.get(`https://localhost/api/threads/find/${tag}/${page}/${30}`,{withCredentials:true}
+async function getPosts(){
+    const fetch = axios.get(`https://localhost/api/threads/find/${tag.value}/${lastPage.value}/${30}`,{withCredentials:true}
     ).then((res)=>{
-        threads.value = res.data.threads
-        console.log(res.data.threads)
+        posts.value = res.data.posts
     }).catch((err)=>{
             console.log(err)
     })
 }
 
-async function deleteThread(id){
-    const fetch = axios.delete(`https://localhost/api/threads/${id}`,{
-        withCredentials:true}).catch((err)=>{
-        console.log(err)
-    })
+async function hideThread(id){
+  const fetch = axios.post(`https://localhost/api/threads/post/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
+    console.log(err)
+  })
 }
-
-async function gotoThread(id){
-    router.push(`/thread/${id}`)
+async function goToThread(threadId){
+    router.push(`/thread/${threadId}/post/${postId}`)
 }
 
 async function nextPage(){
     lastPage.value++
     localStorage.setItem("lastTagPage",lastPage.value)
-    getThreads(lastPage.value)
+    getPosts()
 }
 
 async function prevPage(){
     if(lastPage.value>1){
         lastPage.value--
         localStorage.setItem("lastTagPage",lastPage.value)
-        getThreads(lastPage.value)
+        getPosts()
     }
 }
 
@@ -75,38 +56,37 @@ async function getMyData(){
 
 
 onMounted(()=>{
-    getThreads(lastPage.value)
+    getPosts()
     getMyData()
 })
-
-watch(
-  () => route.params.threadId,
-  (newId) => {
-    getThreads(newId)
-  },
-  { immediate: true }
-)
+onUnmounted(()=>{
+    localStorage.removeItem("lastTagPage")
+})
 
 </script>
 <template>
   <div class="container">
     <ul class="thread-list">
-      <li v-for="thread in threads" :key="thread._id" class="thread-item">
+      <li v-for="post in posts" :key="post._id" class="thread-item">
         <div class="thread-info">
-          <div class="title">{{ thread.title }}</div>
-          <div class="likes">{{ thread.likes }}</div>
+          <strong>{{ post.creatorLogin }}</strong><br></br>
+          <div class="title">{{ post.title }}</div>
+          <div class="content">
+            <div v-if="post2.content.length<30">{{ post2.content }}</div>
+            <div v-else>{{ post2.content.slice(0,25) + '...' }}</div>
+          </div>
         </div>
 
         <div class="actions">
-          <button class="btn delete" @click="deleteThread(thread._id)">Delete</button>
-          <button class="btn" @click="gotoThread(thread._id)">See more</button>
+          <button class="btn delete" @click="hideThread(post._id)">Hide</button>
+          <button class="btn" @click="goToThread(post._id)">See more</button>
         </div>
       </li>
     </ul>
 
     <div class="pagination">
-      <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-      <button v-if="threads.length !== 0" @click="nextPage()">Next page</button>
+      <button v-if="lastPage > 1" @click="prevPage()">Previous page</button>
+      <button v-if="posts.length >= 30" @click="nextPage()">Next page</button>
     </div>
   </div>
 </template>

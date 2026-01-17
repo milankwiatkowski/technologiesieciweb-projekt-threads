@@ -25,6 +25,7 @@ const isReplying = ref(false)
 const threadId = computed(() => route.params.threadId)
 const postId = computed(() => route.params.postId)
 const blockedUsersId = ref([])
+const postTags = ref('')
 async function like(){
     const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/${postId.value}/likes`,{like:'like'},{withCredentials:true}).catch((err)=>{
         console.log(err)
@@ -37,6 +38,9 @@ async function disLike(){
 }
 function setEditing(){
   isEditing.value = true
+}
+async function goToThread(id){
+    router.push(`/thread/${id}`)
 }
 async function editPost(){
     const fetch = axios.post(`https://localhost/api/threads/edit/${threadId.value}/${postId.value}`,{
@@ -67,8 +71,13 @@ async function reply(){
     isReplying.value = false
     const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/reply/${postId.value}`,{
         title: replyTitle.value,
+        tags: postTags.value,
         content: replyContent.value},
-        {withCredentials:true}).catch((err)=>{
+        {withCredentials:true}).then(()=>{
+            replyTitle.value = ''
+            replyContent.value = ''
+            postTags.value = ''
+        }).catch((err)=>{
         console.log(err)
     })
 }
@@ -95,7 +104,7 @@ function onHidden(post){
   posts.value = posts.value.filter(x => x._id !== post._id)
 }
 async function hide(id){
-  const fetch = axios.post(`https://localhost/api/threads/post/hide/${threadId.value}/${id}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`https://localhost/api/threads/post/hide/${threadId.value}/${id}`,{postId:postId.value},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
@@ -122,13 +131,23 @@ async function getPosts(page){
     })
 }
 function onReply(reply){
-  posts.value.unshift(reply)
+  if (posts.value.length < 20) posts.value.push(reply)
+  postsAmount.value += 1
 }
+function blockedUser(user){
+  blockedUsersId.value.push(user)
+}
+function unblockedUser(user){
+  blockedUsersId.value = blockedUsersId.value.filter(x => x._id !== user._id)
+}
+// req.app.get('io').to(`thread:${thread._id}`).emit('blockedUser',req.params.userId)
 onMounted(()=>{
   socket.on("liked",onLike)
   socket.on("disliked",onDislike)
   socket.on("postDeleted",onHidden)
   socket.on("newReply",onReply)
+  socket.on("blockedUser",blockedUser)
+  socket.on("unblockedUser",unblockedUser)
   socket.emit("post:join", { postId: postId.value })
   getMyData()
   getPostDetails(postId.value)
@@ -141,7 +160,7 @@ onUnmounted(()=>{
   socket.off("disliked",onDislike)
   socket.off('postDeleted',onHidden)
   socket.off('newReply',onReply)
-  localStorage.setItem("lastPostsPage",lastPostsPage.value)
+  localStorage.setItem("lastPostsPage",1)
   socket.emit("post:leave", { postId: postId.value })
   socket.disconnect()
 })
@@ -158,62 +177,135 @@ watch(
 )
 </script>
 <template>
-    <div class="thread-info" v-if="!isEditing">
-      <div>{{ post.creatorLogin }}</div>
-      <p class="likes"><strong>Likes:</strong> {{ likes }}</p>
-      <p class="likes"><strong>Dislikes:</strong> {{ disLikes }}</p>
-      <HighlightedText v-if="post.content" :text="post.content" class="post-content" />
-      <div class="post-buttons">
-        <button class="btn accent" @click="like()">Like</button>
-        <button class="btn accent" @click="disLike()">Dislike</button>
-        <button class="btn" v-if="!isReplying" @click="isReplying = true">Reply</button>
-        <button class="btn" v-if="me.isAdmin || (post.rootModId || []).includes(me._id)" @click="setEditing()">Edit</button>
+  <button class="btn-back" @click="goToThread(threadId)">Go back</button>
+  <div class="thread-wrapper">
+      <div class="thread-info" v-if="!isEditing">
+        <div class="login">Author: {{ post.creatorLogin }}</div>
+        <strong>{{ post.title }}</strong><br></br>
+        <p class="likes"><strong>Likes:</strong> {{ likes }}</p>
+        <p class="likes"><strong>Dislikes:</strong> {{ disLikes }}</p>
+        <HighlightedText v-if="post.content" :text="post.content" class="post-content" />
+        <div class="tags">Tags: {{ post.tags }}</div>
+        <div class="post-buttons">
+          <button class="btn accent" @click="like()">Like</button>
+          <button class="btn accent" @click="disLike()">Dislike</button>
+          <button class="btn" v-if="!isReplying" @click="isReplying = true">Reply</button>
+          <button class="btn" v-if="post.creatorId === me._id" @click="setEditing()">Edit</button>
+        </div>
       </div>
-    </div>
-    <div v-if="isEditing && (me.isAdmin || (post.rootModId || []).includes(me._id) || post.creatorId === me._id)" class="edit-box">
-      <form @submit="editPost(thread._id,post._id)" class="edit-form">
-        <div class="edit-group">
-          <strong>Current title:</strong> {{ post.title }}
-          <input v-model="title" placeholder="Change title" />
-        </div>
+      <div v-if="isEditing && post.creatorId === me._id" class="edit-box">
+        <form @submit="editPost(thread._id,post._id)" class="edit-form">
+          <div class="edit-group">
+            <strong>Current title:</strong> {{ post.title }}
+            <input v-model="title" placeholder="Change title" />
+          </div>
 
-        <div class="edit-group">
-          <strong>Current content:</strong> {{ post.content }}
-          <textarea v-model="content" placeholder="Change content"></textarea>
-        </div>
-        <button class="btn accent" type="submit">Submit editing</button>
-      </form>
-    </div>
-    <div v-if="isReplying" class="replying">
-            <div>
-              <form @submit="reply()" class="edit-form">
-                <div class="edit-group">
-                  <input v-model="replyTitle" placeholder="..." />
-                  <textarea v-model="replyContent" placeholder="..."></textarea>
+          <div class="edit-group">
+            <strong>Current content:</strong> {{ post.content }}
+            <textarea v-model="content" placeholder="Change content"></textarea>
+          </div>
+          <button class="btn accent" type="submit">Submit editing</button>
+        </form>
+      </div>
+      <div v-if="isReplying" class="replying">
+              <div>
+                <form @submit="reply()" class="edit-form">
+                  <div class="edit-group">
+                    <input v-model="replyTitle" placeholder="..." />
+                    <textarea v-model="replyContent" placeholder="..."></textarea>
+                    <input v-model="postTags" placeholder="Add tags" />
+                  </div>
+                  <button class="btn accent" type="submit">Send reply</button>
+                </form>
+              </div>
+            </div>
+        <div>
+          <div class="replies-container">        
+            <div v-for="post2 in posts" :key="post2._id" class="reply-item">
+              <div class="reply-info">
+                <div class="creator">Author: {{ post2.creatorLogin }}</div>
+                <div class="title">{{ post2.title }}</div>
+                <div class="content">
+                  <div v-if="post2.content.length<30">{{ post2.content }}</div>
+                  <div v-else>{{ post2.content.slice(0,25) + '...' }}</div>
                 </div>
-                <button class="btn accent" type="submit">Send reply</button>
-              </form>
+              </div>
+              <div class="reply-actions">
+                <button class="btn" @click="goToPost(post2._id)">See more</button>
+                <button v-if="(!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin)" class="btn delete" @click="hide(post2._id)">Delete</button>
+              </div>
             </div>
           </div>
-      <div class="pagination">
-        <button class="btn" v-if="lastPostsPage !== 1" @click="prevPostsPage()">Previous page</button>
-        <button class="btn" v-if="postsAmount >= 40" @click="nextPostsPage()">Next page</button>
-      </div>
-      <div>
-        <div class="replies-container">        
-        <div v-for="post2 in posts" :key="post2._id" class="child-item">
-        <div class="child-info">
-          <div class="title">{{ post2.title }}</div>
-          <div class="creator">By: {{ post2.creatorLogin }}</div>
         </div>
-        <div class="child-actions">
-          <button class="btn" @click="goToPost(post2._id)">See more</button>
-          <button v-if="(!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin)" class="btn delete" @click="hide(post._id)">Delete</button>
+        <div class="pagination">
+          <button class="btn" v-if="lastPostsPage > 1" @click="prevPostsPage()">Previous page</button>
+          <button class="btn" v-if="posts.length >= 20" @click="nextPostsPage()">Next page</button>
         </div>
-      </div></div>
-      </div>
+  </div>
 </template>
 <style scoped>
+.btn-back{
+    margin-bottom: 16px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+.replies-container{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 28px;
+  align-items: start;
+  padding: 0 16px;
+  column-gap: 32px;
+  row-gap: 22px;
+  margin-top: 18px;
+}
+
+.reply-item{
+  width: 100%;
+  padding: 12px 14px; 
+  border: 1px solid rgba(255,255,255,0.12); 
+  border-radius: 12px; 
+  background: rgba(255,255,255,0.04);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+}
+
+.reply-info{
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reply-info .title{
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reply-info .creator{
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+
+.reply-actions{
+  display: grid;
+  grid-auto-flow: column;
+  gap: 8px;
+  justify-content: end;
+}
+
+.login{
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.tags{
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
 .thread-container{
   display: grid;
   grid-template-columns: 360px 1fr; 
@@ -224,12 +316,17 @@ watch(
   padding: 0;
   min-height: unset;
 }
+.thread-wrapper{
+  max-width: 900px;
+  margin: 0 auto;
+}
 .thread-info {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
-  max-width: 900px;
+  width:100%;
+  max-width: none;
   margin: 0 auto;
 }
 

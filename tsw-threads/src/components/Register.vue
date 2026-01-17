@@ -12,12 +12,12 @@ const router = useRouter()
 const login = ref('')
 const password = ref('')
 const repeatedpassword = ref('')
-const email = ref('')
 
 async function sendRegister(){
     if(password.value===repeatedpassword.value){
         const fetch = await axios.post('https://localhost/api/auth/register',{
             password:password.value,
+            repeatedPassword:repeatedpassword.value,
             login:login.value
         }).then((res)=>{
             if(res.status===200){

@@ -92,6 +92,7 @@ router.post('/register', async (req, res,next) => {
             return res.status(500).json({message:"Username has to be an email!"})
         }
         else{
+        if(req.body.password===req.body.repeatedPassword){
         let salt = crypto.randomBytes(Number(SALT_BITS));
         const users = await User.find()
         if(users.length===0){
@@ -118,6 +119,10 @@ router.post('/register', async (req, res,next) => {
                 console.log(`INFO Username ${req.body.login} was already taken ${getTime()}`)
                 return res.status(500).json({message:"Username already taken"})
             }
+        }}
+        else{
+                console.log(`ERROR Passwords must match! ${getTime()}`)
+                return res.status(500).json({message:"Passwords must match!"})
         }
         }
     }
@@ -134,7 +139,7 @@ router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) 
             isRootMod: req.user.isRootMod,
             login: req.user.login,
             isAdmin: req.user.isAdmin,
-            isAcceptedByAdmin: req.user.isAcceptedByAdmin,};
+            isAcceptedByAdmin: req.user.isAcceptedByAdmin};
         return res.json({user:userData,status:200})
     }
     catch(err){
