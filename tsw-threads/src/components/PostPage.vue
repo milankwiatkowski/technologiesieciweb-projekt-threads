@@ -177,7 +177,7 @@ watch(
 )
 </script>
 <template>
-  <button class="btn-back" @click="goToThread(threadId)">Go back</button>
+  <button class="btn" @click="goToThread(threadId)">Go back</button>
   <div class="thread-wrapper">
       <div class="thread-info" v-if="!isEditing">
         <div class="login">Author: {{ post.creatorLogin }}</div>
@@ -244,7 +244,7 @@ watch(
   </div>
 </template>
 <style scoped>
-.btn-back{
+.btn{
     margin-bottom: 16px;
     padding: 8px 14px;
     color: var(--text);

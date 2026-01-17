@@ -71,7 +71,7 @@ onMounted(()=>{
         <button v-if="!user.isAdmin && user.isRootMod" class="remove-btn" @click="takeMod(user._id)">Remove {{ user.login }} from root moderators</button>
       </div>
       <button class="btn" v-if="userPage > 1" @click="prevPage()">Previous page</button>
-      <button class="btn" v-if="users.length <= 40" @click="nextPage()">Next page</button>
+      <button class="btn" v-if="users.length >= 40" @click="nextPage()">Next page</button>
     </div>
     </div>
     <div v-else-if="foundUser">

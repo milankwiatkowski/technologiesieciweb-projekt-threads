@@ -92,38 +92,45 @@ router.post('/register', async (req, res,next) => {
             return res.status(500).json({message:"Username has to be an email!"})
         }
         else{
-        if(req.body.password===req.body.repeatedPassword){
-        let salt = crypto.randomBytes(Number(SALT_BITS));
-        const users = await User.find()
-        if(users.length===0){
-            crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                const user = new User({isAdmin:true,password:hashedPassword,isRootMod:true,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate()})
-                if (err) { return next(err); }
-                console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
-                await user.save()
-                return res.json({message:"Registration successful!",status:200})})
-        }
-        else{
-            const userFound = users.filter((x) => x.login === req.body.login)
-            if(userFound.length===0){
-                crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                    const user = new User({isAdmin:false,password:hashedPassword,isRootMod:false,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
-                    console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
-                    if (err) { return next(err); }
-                    await user.save()
-                    req.app.get('io').to('adminsChat').emit('adminMessage',`INFO - User ${req.body.login} is waiting to be accepted!`)
-                    req.app.get('io').to('admins').emit('addUserToBeAccepted',user)
-                    return res.json({message:"Registration successful!",status:200})})
+            if(req.body.password===req.body.repeatedPassword){
+                if(req.body.password.length>=7 && req.body.password.length<=15){
+                    let salt = crypto.randomBytes(Number(SALT_BITS));
+                    const users = await User.find()
+                    if(users.length===0){
+                        crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
+                            const user = new User({isAdmin:true,password:hashedPassword,isRootMod:true,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate()})
+                            if (err) { return next(err); }
+                            console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
+                            await user.save()
+                            return res.json({message:"Registration successful!",status:200})})
+                    }
+                    else{
+                        const userFound = users.filter((x) => x.login === req.body.login)
+                        if(userFound.length===0){
+                            crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
+                                const user = new User({isAdmin:false,password:hashedPassword,isRootMod:false,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
+                                console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
+                                if (err) { return next(err); }
+                                await user.save()
+                                req.app.get('io').to('adminsChat').emit('adminMessage',`INFO - User ${req.body.login} is waiting to be accepted!`)
+                                req.app.get('io').to('admins').emit('addUserToBeAccepted',user)
+                                return res.json({message:"Registration successful!",status:200})})
+                        }
+                        else{
+                            console.log(`INFO Username ${req.body.login} was already taken ${getTime()}`)
+                            return res.status(500).json({message:"Username already taken"})
+                        }
+                    }
+                }
+                else{
+                    console.log(`INFO User ${user._id} tried to change a password but they were too short!${getTime()}`)
+                    return res.status(500).json({message:"Password is too short! They should have between 7 and 15 characters"})
+                }
             }
             else{
-                console.log(`INFO Username ${req.body.login} was already taken ${getTime()}`)
-                return res.status(500).json({message:"Username already taken"})
-            }
-        }}
-        else{
                 console.log(`ERROR Passwords must match! ${getTime()}`)
                 return res.status(500).json({message:"Passwords must match!"})
-        }
+            }
         }
     }
     catch(err){

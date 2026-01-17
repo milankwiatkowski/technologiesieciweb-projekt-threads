@@ -69,40 +69,39 @@ router.delete('/:idUser',isAdmin, async (req, res) => {
 
 router.post('/patch/:idUser', async (req, res) => {
     console.log(`INFO User ${req.user.login} is trying to patch user ${req.params.idUser} ${getTime()}`)
+    const id = req.params.idUser;
     try{
-        const id = req.params.idUser;
         const user = await User.findById(req.user.id)
-        if(user._id.equals(req.params.idUser)){
-            if(req.body.login){
-                const users = await User.find({login:req.body.login})
-                if(users.length===0){
-                    await User.findByIdAndUpdate(user._id,
-                    { $set: {login:req.body.login}},
-                    { new:true, runValidators:true})
-                    console.log(`INFO User's ${req.body.login} LOGIN was patched successfully ${getTime()}`)
-                }
-                else{
-                    console.log(`INFO Username ${req.body.login} was already taken ${getTime()}`)
-                    return res.status(500).json({message:"Username already taken"})
-                }
-            }
-            else if(!req.body.password.empty() && !req.body.repeatedPassword.empty() && req.body.password===req.body.repeatedPassword){
-                let salt = crypto.randomBytes(Number(SALT_BITS));
-                const user = await User.find({login:req.body.login})
+        if(user && user._id.equals(id)){
+            if(req.body.password.length>=7 && req.body.password.length<=15){
+                if(req.body.password && req.body.repeatedPassword && req.body.password === req.body.repeatedPassword){
+                    let salt = crypto.randomBytes(Number(SALT_BITS));
+                    const users = await User.find({login:req.body.login})
                     crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                        const user = await User.findByIdAndUpdate(user._id,
-                            { $set: {password:hashedPassword}},
+                        if (err) { return next(err); }
+                        await User.findByIdAndUpdate(req.params.idUser,
+                            { $set: {password:hashedPassword,salt:salt}},
                             { new:true, runValidators:true}
                         )
-                        if (err) { return next(err); }
                         console.log(`INFO User's ${req.body.login} PASSWORD was patched succesfully ${getTime()}`)
-                        return res.json({message:"Patch successful",user:user,status:200})})
+                        // return res.json({message:"Patch successful",user:user,status:200})
+                    })  
+                }
+                else{
+                    console.log(`INFO User ${user._id} tried to change a password but they didn't match!${getTime()}`)
+                    return res.status(500).json({message:"Passwords don't match!"})
+                }
+            }
+            else{
+                console.log(`INFO User ${user._id} tried to change a password but they were too short!${getTime()}`)
+                return res.status(500).json({message:"Password is too short! They should have between 7 and 15 characters"})
             }
             console.log(`INFO User ${req.user.id} successfully patched user ${req.params.idUser} ${getTime()}`)
-            const user = await User.findById(req.params.idUser)
-            req.app.get("io").emit('user',user) //TODO
+            req.app.get("io").emit('user',user)
             return res.json({status:200})
         }
+        console.log('ERROR')
+        return res.status(400).json({error:'ERROR'})
     }
     catch (err){
         console.log(`ERROR ${err} ${getTime()}`)

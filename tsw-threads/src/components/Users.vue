@@ -95,13 +95,13 @@ function userToBeAccepted(user){
 }
 function adminMessagesListener(){
     socket.on("userAccepted",userAccepted)
-    socket.on("userDeniedAccept",userDeniedAccept)
+    socket.on("userNotAccepted",userDeniedAccept)
     socket.on("addUserToBeAccepted",userToBeAccepted)
     socket.on("adminAdded",addAdmin)
 }
 function detachAdminMessagesListener(){
     socket.off("userAccepted",userAccepted)
-    socket.off("userDeniedAccept",userDeniedAccept)
+    socket.off("userNotAccepted",userDeniedAccept)
     socket.off("addUserToBeAccepted",userToBeAccepted)
     socket.off("adminAdded",addAdmin)
 }

@@ -23,8 +23,10 @@ function getMyData(){
     })
 }
 function patchPassword(){
-    axios.post(`https://localhost/api/users/patch/${me.value._id}`,{password:password.value,repeatedPassword:repeatedPassword.value},{withCredentials:true}).catch((err)=>{
-        console.log(err)
+    axios.post(`https://localhost/api/users/patch/${me.value._id}`,{password:password.value,repeatedPassword:repeatedPassword.value},{withCredentials:true}).then(()=>{
+      alert("Password changed successfully")
+    }).catch((err)=>{
+        alert(err.response.data.message)
     })
 }
 function seeAllUsers(){
@@ -50,7 +52,6 @@ onMounted(()=>{
     <div v-if="me && me._id" class="password-card">
       <form @submit.prevent="patchPassword" class="password-form">
         <h3>Change your password</h3>
-
         <input v-model="password" type="password" placeholder="Your password" required />
         <input v-model="repeatedPassword" type="password" placeholder="Repeat your password" required />
 
