@@ -753,7 +753,7 @@ router.post('/post/hide/:threadId/:postId',async(req,res)=>{
         const user = await User.findById(req.user.id)
         const mods = thread.modsThreadId
         const rootMods = thread.rootModId
-        if(mods.includes(user._id) || rootMods.includes(user._id) || req.user.isAdmin || user._id === post.creatorId){
+        if(mods.includes(user._id) || rootMods.includes(user._id) || req.user.isAdmin || (post.creatorId && user._id.equals(post.creatorId))){
             if(!post.isHidden){
                 const update = await Post.findByIdAndUpdate(
                     req.params.postId,
@@ -772,10 +772,14 @@ router.post('/post/hide/:threadId/:postId',async(req,res)=>{
                         {$set:{refersToPost:null}})
                     req.app.get('io').to(`post:${req.body.postId}`).emit('postDeleted',post)
                 }
+                console.log(`INFO User ${req.user.login} successfully changed the OPEN/CLOSE status of post ${req.params.postId} ${getTime()}`)
+                return res.json({status:200})
             }
         }
-        console.log(`INFO User ${req.user.login} successfully changed the OPEN/CLOSE status of post ${req.params.postId} ${getTime()}`)
-        return res.json({status:200})
+        else{
+            console.log(`INFO User ${req.user.login} tried to the change the OPEN/CLOSE status of post ${req.params.postId} but failed ${getTime()}`)
+            return res.json({status:400})
+        }
     }
     catch(err){
         console.log(`ERROR ${err} ${getTime()}`)

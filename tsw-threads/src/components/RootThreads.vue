@@ -128,7 +128,7 @@ watch(lastPage, (newPage)=>{
         <div class="thread-actions">
           <button @click="getThreadDetails(thread._id)">See more</button>
           <!-- <button v-if="me.isAdmin || thread.creatorId === me._id" @click="deleteThread(thread._id)">Delete</button> -->
-          <!-- <button class="btn" v-if="me.isAdmin" @click="hide(thread._id)">Hide thread</button> -->
+          <button class="btn" v-if="me.isAdmin" @click="hide(thread._id)">Hide thread</button>
         </div>
       </li>
     </ul>

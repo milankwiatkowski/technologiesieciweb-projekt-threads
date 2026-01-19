@@ -220,7 +220,7 @@ watch(
 
         <div class="child-actions">
           <button class="btn" @click="goToThread(thread2._id)">See more</button>
-          <!-- <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button> -->
+          <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button>
         </div>
       </div>
     <div class="pagination">
@@ -246,7 +246,9 @@ watch(
 
         <div class="child-actions">
           <button class="btn" @click="goToPost(post._id)">See more</button>
-          <button v-if="(!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin)" class="btn delete" @click="hidePost(post._id)">Delete</button>
+          <button v-if="(
+                          !blockedUsersId.includes(me._id) && 
+                          ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin || post.creatorId.toString() === me._id.toString())" class="btn delete" @click="hidePost(post._id)">Delete</button>
         </div>
       </div>
       <div class="pagination">
