@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('node:path');
 const User = require(path.join(process.cwd(), 'models', 'User'));
-const {isAdmin} = require('./middleware')
+const {isAdmin, isAcceptedByAdmin} = require('./middleware')
 const crypto = require('node:crypto')
 const HASH_FUNCTION = process.env.HASH || 'sha256'
 const SALT_BITS = process.env.SALT_BITS || 16
@@ -40,8 +40,17 @@ router.get(`/:page/:limit`,isAdmin, async (req, res) => {
         const user = await User.findById(req.user.id)
         if(user.isAdmin){
             const users =  await User.find().skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
+            const mapped_users = users.map(x =>({
+                _id:x._id,
+                login:x.login,
+                isAdmin:x.isAdmin,
+                registrationnDate:x.registrationDate,
+                isRootMod:x.isRootMod,
+                modOfThreadsId:x.modOfThreadsId,
+                isAcceptedByAdmin:x.isAcceptedByAdmin
+            }))
             console.log(`INFO User ${req.user.login} was granted the list of all users ${getTime()}`)
-            return res.status(200).json({users:users})
+            return res.status(200).json({users:mapped_users})
         }
     }
     catch(err){

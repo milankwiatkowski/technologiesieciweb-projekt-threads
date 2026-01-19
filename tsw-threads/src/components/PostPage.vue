@@ -189,7 +189,7 @@ watch(
         <div class="post-buttons">
           <button class="btn accent" @click="like()">Like</button>
           <button class="btn accent" @click="disLike()">Dislike</button>
-          <button class="btn" v-if="!isReplying" @click="isReplying = true">Reply</button>
+          <button class="btn" v-if="!isReplying && !blockedUsersId.includes(me._id)" @click="isReplying = true">Reply</button>
           <button class="btn" v-if="post.creatorId === me._id" @click="setEditing()">Edit</button>
         </div>
       </div>

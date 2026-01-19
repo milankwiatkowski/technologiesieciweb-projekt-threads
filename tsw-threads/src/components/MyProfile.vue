@@ -32,7 +32,9 @@ function patchPassword(){
 function seeAllUsers(){
     router.push('/users')
 }
-
+function seeHiddenPosts(){
+    router.push('/hidden')
+}
 onMounted(()=>{
     getMyData()
 })
@@ -43,10 +45,14 @@ onMounted(()=>{
     <ul v-if="me && me.login" class="profile-card">
       <li><strong>Login:</strong> {{ me.login }}</li>
       <li><strong>Admin:</strong> {{ me.isAdmin }}</li>
-
-      <button v-if="me.isAdmin" class="admin-btn" @click="seeAllUsers()">
-        See all users
-      </button>
+      <div v-if="me.isAdmin">
+        <button class="admin-btn" @click="seeAllUsers()">
+          See all users
+        </button>
+        <button class="admin-btn" @click="seeHiddenPosts()">
+          See hidden posts
+        </button>
+      </div>
     </ul>
 
     <div v-if="me && me._id" class="password-card">

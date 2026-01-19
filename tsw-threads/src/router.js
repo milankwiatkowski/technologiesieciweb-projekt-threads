@@ -10,6 +10,7 @@ import FoundByTag from './components/FoundByTag.vue'
 import WaitingRoom from './components/WaitingRoom.vue'
 import PostPage from './components/PostPage.vue'
 import RootModeratorPanel from './components/RootModeratorPanel.vue'
+import HiddenPosts from './components/HiddenPosts.vue'
 export default createRouter({
   history: createWebHistory(),
   routes: [
@@ -23,6 +24,7 @@ export default createRouter({
     { path: '/rootModpanel', component: RootModeratorPanel },
     { path: '/users', component: Users },
     { path: '/searched/:tag', component:FoundByTag},
+    { path: '/hidden', component:HiddenPosts},
     { path: '/waitingRoom',component:WaitingRoom}
   ]
 })

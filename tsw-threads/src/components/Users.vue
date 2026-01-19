@@ -27,6 +27,7 @@ async function getUsers(){
         users.value = res.data.users
         usersToShow.value = res.data.users.filter((x) => x.isAcceptedByAdmin === true)
         admins.value = res.data.users.filter((x) => x.isAdmin === true)
+        console.log(users.value)
     }).catch((err)=>{
             console.log(err)
     })

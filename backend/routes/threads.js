@@ -5,6 +5,7 @@ const User = require(path.join(process.cwd(), 'models', 'User'));
 const Thread = require(path.join(process.cwd(), 'models', 'Thread'));
 const Post = require(path.join(process.cwd(), 'models', 'Post'));
 const mongoose = require('mongoose');
+const {isAdmin} = require('./middleware')
 function getTime(){
     return new Date().toLocaleString('pl-PL', {
         day: '2-digit',
@@ -181,7 +182,7 @@ router.post('/subthread/:threadId',async(req,res)=>{
             await newThread.save()
             req.app.get("io").to(`thread:${parentThread._id}`).emit("subthreadAdded",newThread)
             const authors = parentThread.threadAuthors
-            if(!authors.find((x) => x.id === user._id)){
+            if(!authors.find((x) => x.id.toString() === user._id.toString())){
                 authors.push({id:user._id,login:user.login})
             }
             const update = await Thread.findByIdAndUpdate(
@@ -206,38 +207,37 @@ router.post('/:threadId/block/:userId',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to block user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
-        const user = await User.findById(req.params.userId)
+        const user = await User.findById(req.user.id)
+        const userToBeBlocked = await User.findById(req.params.userId)
         const blocked = thread.blockedId
-        if(!blocked.some(x => x.equals(user._id)) && !blocked.some(x => x.equals(req.params.userId)) && (user.isAdmin || thread.rootModId.some(x => x.equals(user._id)) || (thread.modsThreadId.some(x => x.equals(user._id)) && thread.modsThreadId.some(x => x.equals(req.params.userId))))){
+        if(
+            !blocked.some(x => x.equals(user._id)) && 
+            !blocked.some(x => x.equals(userToBeBlocked._id)) && 
+            !userToBeBlocked.isAdmin &&
+            (user.isAdmin || thread.rootModId.some(x => x.equals(user._id)) || 
+            (thread.modsThreadId.some(x => x.equals(user._id)) && 
+            !thread.rootModId.some(x => x.equals(userToBeBlocked._id))))){
+
             const stack = []
             async function getChildren(thread){
             if(!thread) return
-            if(thread.childThreadsId.length === 0){
-                stack.push(thread._id)
-            }
-            else{
-                for(let i=0;i<thread.childThreadsId.length;i++){
-                    const child = await Thread.findById(thread.childThreadsId[i])
-                    if (!stackThread) return
-                    await getChildren(child)
-                    stack.push(child._id)
-                }
+            stack.push(thread._id)
+            for(let i=0;i<thread.childThreadsId.length;i++){
+                const child = await Thread.findById(thread.childThreadsId[i])
+                if (!child) continue
+                await getChildren(child)
             }
         }
         await getChildren(thread)
+        await Thread.updateMany(
+            {_id:{$in: stack}},
+            { $addToSet: {blockedId: userToBeBlocked._id}}
+        )
         for(let i=0;i<stack.length;i++){
-            await Thread.findByIdAndUpdate(stack[i],
-                { $addToSet: {blockedId:req.params.userId}},
-                { new:true, runValidators:true})
+            req.app.get('io').to(`thread:${stack[i]}`).emit('blockedUser',req.params.userId)
         }
-        const updated = await Thread.findByIdAndUpdate(
-                req.params.threadId,
-                { $set: {blockedId:[...blocked,req.params.userId]}},
-                { new:true, runValidators:true}
-            )
-            req.app.get('io').to(`thread:${thread._id}`).emit('blockedUser',req.params.userId)
-            console.log(`INFO User ${req.user.login} successfully blocked user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
-            return res.json({status:200})
+        console.log(`INFO User ${req.user.login} successfully blocked user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
+        return res.json({status:200})
         }
     }
     catch(err){
@@ -249,31 +249,38 @@ router.post('/:threadId/unblock/:userId',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to unblock user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         const thread = await Thread.findById(req.params.threadId)
-        const user = await User.findById(req.params.userId)
+        const user = await User.findById(req.user.id)
+        const userToBeUnblocked = await User.findById(req.params.userId)
         const blocked = thread.blockedId
-        if(blocked.some(x => x.equals(req.params.userId)) && !blocked.some(x => x.equals(user._id)) && (user.isAdmin || thread.rootMod.some(x => x.equals(user._id)) || thread.modsThreadId.some(x => x.equals(user._id)))){
+        if(
+            user && 
+            userToBeUnblocked &&
+            blocked.some(x => x.equals(userToBeUnblocked._id)) && 
+            !blocked.some(x => x.equals(user._id)) && 
+            (
+                user.isAdmin || 
+                user.isRootMod || 
+                thread.rootModId.some(x => x.equals(user._id)) || 
+                thread.modsThreadId.some(x => x.equals(user._id)))){
+        
         const stack = []
         async function getChildren(thread){
             if (!thread) return
-            if(thread.childThreadsId.length === 0){
-                stack.push(thread._id)
-            }
-            else{
-                for(let i=0;i<thread.childThreadsId.length;i++){
-                    const child = await Thread.findById(thread.childThreadsId[i])
-                    if (!child) continue
-                    await getChildren(child)
-                    stack.push(child._id)
-                }
+            stack.push(thread._id)
+            for(let i=0;i<thread.childThreadsId.length;i++){
+                const child = await Thread.findById(thread.childThreadsId[i])
+                if (!child) continue
+                await getChildren(child)
             }
         }
         await getChildren(thread)
+        await Thread.updateMany(
+            {_id:{$in: stack}},
+            { $pull: {blockedId: userToBeUnblocked._id}}
+        )
         for(let i=0;i<stack.length;i++){
-            const stackThread = await Thread.findById(stack[i])
-            const updated = await Thread.findByIdAndUpdate(stack[i],
-                { $pull: {blockedId:req.params.userId}},
-                { new:true, runValidators:true})}
-        req.app.get('io').to(`thread:${thread._id}`).emit('unblockedUser',req.params.userId)
+            req.app.get('io').to(`thread:${stack[i]}`).emit('unblockedUser',req.params.userId)
+        }
         console.log(`INFO User ${req.user.login} successfully unblocked user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         return res.json({status:200})
         }
@@ -290,9 +297,9 @@ router.post('/:threadId/givemod/:userId',async(req,res)=>{
         if(req.params.threadId!='root'){
         const thread = await Thread.findById(req.params.threadId)
         if(thread && (user._id != req.params.userId && 
-                        user.isAdmin && 
-                        thread.creatorId !== req.params.userId &&
-                        (thread.rootMod.some(x => x.equals(user._id)) && ((thread.rootModId.some(x => x.equals(req.params.userId)) || thread.modsThreadId.some(x => x.equals(req.params.userId))))) ||
+                        thread.creatorId !== req.params.userId && 
+                        (user.isRootMod || user.isAdmin) ||
+                        (thread.rootModId.some(x => x.equals(user._id)) && ((thread.rootModId.some(x => x.equals(req.params.userId)) || thread.modsThreadId.some(x => x.equals(req.params.userId))))) ||
                         (thread.modsThreadId.some(x => x.equals(user._id)) && !thread.rootThreadId.some(x => x === req.params.userId)))){
             const stack = []
             async function getChildren(stackThread){
@@ -342,35 +349,35 @@ router.delete('/:threadId/givemod/:userId',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to take mod from user ${req.params.userId} in thread ${req.params.threadId} ${getTime()}`)
         const user = await User.findById(req.user.id)
+        const user2 = await User.findById(req.params.userId)
         if(req.params.threadId!=='root'){
         const thread = await Thread.findById(req.params.threadId)
         if(thread){
             const mods = thread.modsThreadId
             const rootMods = thread.rootModId
-            if(user._id != req.params.userId &&  
-                thread.creatorId !== req.params.userId && 
-                user.isAdmin ||
-                (rootMods.some(x => x.equals(user._id)) || 
-                (mods.some(x => x.equals(user._id))) && (thread.modsThreadId.some(x => x.equals(req.params.userId))))){
+            if(
+                user._id.toString() !== user2._id.toString() &&  
+                thread.creatorId.toString() !== user2._id.toString() && 
+                (
+                    user.isRootMod ||
+                    user.isAdmin ||
+                    rootMods.some(x => x.equals(user._id)) || 
+                    (mods.some(x => x.equals(user._id)) && mods.some(x => x.equals(user2._id))))){
+
                 const stack = []
                 async function getChildren(stackThread){
                     if (!stackThread) return
-                    if(stackThread.childThreadsId.length === 0){
-                        stack.push(stackThread._id)
+                    if(stackThread.creatorId.toString() === user2._id.toString()){
+                        return
                     }
-                    else{
-                        for(let i=0;i<stackThread.childThreadsId.length;i++){
-                            const child = await Thread.findById(stackThread.childThreadsId[i])
-                            if(!child) continue
-                            await getChildren(child)
-                            if(!child.creatorId.equals(user._id)){
-                                stack.push(child._id)
-                            }
-                        }
+                    stack.push(stackThread._id)
+                    for(let i=0;i<stackThread.childThreadsId.length;i++){
+                        const child = await Thread.findById(stackThread.childThreadsId[i])
+                        if(!child) continue
+                        await getChildren(child)
                     }
                 }
                 await getChildren(thread)
-                stack.push(thread._id)
                 for(let i=0;i<stack.length;i++){
                     await Thread.findByIdAndUpdate(
                         stack[i],
@@ -548,15 +555,35 @@ router.get('/:threadId/replies/:postId/:page/:limit',async(req,res)=>{
     }
 })
 router.get('/:threadId/posts/postDetails/:postId',async(req,res)=>{
-    console.log(`INFO User ${req.user.login} wants post details ${req.params.postId} from ${req.params.threadId} ${getTime()}`)
+    console.log(`INFO User ${req.user.login} wants post details ${req.params.postId} ${getTime()}`)
     try{
         const post = await Post.findOne({_id:req.params.postId,isHidden:false})
-        console.log(`INFO User ${req.user.login} was granted post details ${req.params.postId} from ${req.params.threadId} ${getTime()}`)
+        console.log(`INFO User ${req.user.login} was granted post details ${req.params.postId} ${getTime()}`)
         return res.json({post:post,status:200})
     }
     catch(err){
         console.log(`ERROR ${err} ${getTime()}`)
         return res.status(400).json({error:err})
+    }
+})
+router.get('/hidden/posts/:page/:limit',isAdmin,async(req,res)=>{
+    console.log(`INFO User ${req.user.login} is trying to get hidden posts ${getTime()}`)
+    try{
+        const user = await User.findById(req.user.id)
+        if(user && user.isAdmin){
+            const {page,limit} = req.params
+            const posts = await Post.find({isHidden:true}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
+            console.log(`INFO User ${req.user.login} was granted hidden posts ${getTime()}`)
+            return res.status(200).json({posts:posts})
+        }
+        else{
+            console.log(`INFO User ${req.user.login} wasn't granted hidden posts due to the lack of permissions. ${getTime()}`)
+            return res.json({status:400})
+        }
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${getTime()}`)
+        return res.json({status:400})
     }
 })
 router.get('/:threadId/posts/:page/:limit',async(req,res)=>{
@@ -597,7 +624,7 @@ router.post(`/:threadId/post`,async(req,res)=>{
             await newPost.save()
             req.app.get("io").to(`thread:${parentThread._id}`).emit("postAdded",newPost)
             const authors = parentThread.threadAuthors
-            if(!authors.find((x) => x.id.equals(user._id))){
+            if(!authors.find((x) => x.id.toString()===user._id.toString())){
                 authors.push({id:user._id,login:user.login})
             }
             const update = await Thread.findByIdAndUpdate(
@@ -639,7 +666,7 @@ router.post('/:threadId/reply/:postId',async(req,res)=>{
             await newPost.save()
             req.app.get("io").to(`post:${replyPost._id}`).emit("newReply",newPost)
             const authors = parentThread.threadAuthors
-            if(!authors.find(x => x.equals(user._id))){
+            if(!authors.find(x => x.id.toString() === user._id.toString())){
                 authors.push({id:user._id,login:user.login})
             }
             const update = await Thread.findByIdAndUpdate(
@@ -733,10 +760,16 @@ router.post('/post/hide/:threadId/:postId',async(req,res)=>{
                     {$set: {isHidden:true}},
                     {new:true, runValidators:true})
                 req.app.get('io').to(`thread:${thread._id}`).emit('postDeleted',post)
-                if(post.refersToPost.length !== 0){
+                if(post.refersToPost !== null){
                     const moveReference = await Post.updateMany(
                         {refersToPost:req.params.postId},
                         {$set:{refersToPost:req.body.postId}})
+                    req.app.get('io').to(`post:${req.body.postId}`).emit('postDeleted',post)
+                }
+                else{
+                    const moveReference = await Post.updateMany(
+                        {refersToPost:req.params.postId},
+                        {$set:{refersToPost:null}})
                     req.app.get('io').to(`post:${req.body.postId}`).emit('postDeleted',post)
                 }
             }

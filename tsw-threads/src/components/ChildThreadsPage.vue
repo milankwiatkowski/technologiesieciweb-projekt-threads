@@ -162,6 +162,7 @@ onMounted(()=>{
   socket.on("postAdded", onPostAdded)
   socket.on("postDeleted", onPostDeleted)
   socket.on("threadDeleted", onThreadDeleted)
+  socket.emit("thread:join", { threadId: threadId.value })
 })
 onUnmounted(() => {
   socket.off("blockedUser", onBlockedUser)
@@ -219,7 +220,7 @@ watch(
 
         <div class="child-actions">
           <button class="btn" @click="goToThread(thread2._id)">See more</button>
-          <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button>
+          <!-- <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button> -->
         </div>
       </div>
     <div class="pagination">
@@ -252,7 +253,7 @@ watch(
         <button class="btn" v-if="lastPostPage !== 1" @click="prevPostPage()">Previous page</button>
         <button class="btn" v-if="postsAmount >= 20" @click="nextPostPage()">Next page</button>
       </div>
-      <button class="btn" @click="isAddingPost = !isAddingPost">Add new post</button>
+      <button class="btn" v-if="!blockedUsersId.includes(me._id)" @click="isAddingPost = !isAddingPost">Add new post</button>
   </div>
   </div>
   <div class="page" v-else-if="isAddingThread">
