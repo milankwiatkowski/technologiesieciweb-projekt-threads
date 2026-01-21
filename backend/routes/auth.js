@@ -123,7 +123,7 @@ router.post('/register', async (req, res,next) => {
                     }
                 }
                 else{
-                    console.log(`INFO User ${user._id} tried to change a password but they were too short!${getTime()}`)
+                    console.log(`INFO User ${req.body.login} tried to register but the password was too short!${getTime()}`)
                     return res.status(500).json({message:"Password is too short! They should have between 7 and 15 characters"})
                 }
             }

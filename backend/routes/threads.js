@@ -29,10 +29,16 @@ function getTime(){
 // })
 router.get('/find/:tag/:page/:limit',async(req,res)=>{
     try{
-        console.log(`INFO User ${req.user.login} is searching for threads with tag(s) ${req.params.tag}`)
-        const tags = req.params.tag.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).slice(0,1)[0]
-        const posts = await Post.find({tags:tags,isHidden:false}).skip((req.params.page-1)*req.params.limit).limit(Number(req.params.limit)).sort({createdAt:-1})
-        return res.status(200).json({posts:posts})
+        const user = await User.findById(req.user.id)
+        if(user && user.isAcceptedByAdmin){
+            console.log(`INFO User ${req.user.login} is searching for threads with tag(s) ${req.params.tag}`)
+            const tags = req.params.tag.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).slice(0,1)[0]
+            const posts = await Post.find({tags:tags,isHidden:false}).skip((req.params.page-1)*req.params.limit).limit(Number(req.params.limit)).sort({createdAt:-1})
+            return res.status(200).json({posts:posts})
+        }
+        else{
+            return res.status(401).json({message:"Unauthorized"})
+        }
     }
     catch(err){
         console.log(`ERROR ${err} ${getTime()}`)
@@ -43,10 +49,16 @@ router.get('/root/:page/:limit',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is requesting root threads ${getTime()}`)
         const {page,limit} = req.params
-        const threads = await Thread.find({isHidden:false,parentThreadId:null}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
-        const filtered = threads.filter((x) => x.parentThreadId === null)
-        console.log(`INFO User ${req.user.login} was granted root threads ${getTime()}`)
-        return res.json({threads:filtered,status:200})
+        const user = await User.findById(req.user.id)
+        if(user && user.isAcceptedByAdmin){
+            const threads = await Thread.find({isHidden:false,parentThreadId:null}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
+            const filtered = threads.filter((x) => x.parentThreadId === null)
+            console.log(`INFO User ${req.user.login} was granted root threads ${getTime()}`)
+            return res.json({threads:filtered,status:200})
+        }
+        else{
+            return res.status(401).json({message:"Unauthorized"})
+        }
     }
     catch(err){
         console.log(`ERROR ${err} ${getTime()}`)
@@ -57,10 +69,13 @@ router.get('/sub/:threadId/:page/:limit',async(req,res)=>{
     console.log(`INFO User ${req.user.login} is requesting threads from ${req.params.threadId} ${getTime()}`)
     try{
         const {page,limit} = req.params
-        const thread = await Thread.findById(req.params.threadId)
-        const threads = await Thread.find({parentThreadId:req.params.threadId,isHidden:false}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
-        console.log(`INFO User ${req.user.login} was granted threads from ${req.params.threadId} ${getTime()}`)
-        return res.json({threads:threads,thread:thread,status:200})
+        const user = await User.findById(req.user.id)
+        if(user && user.isAcceptedByAdmin){
+            const thread = await Thread.findById(req.params.threadId)
+            const threads = await Thread.find({parentThreadId:req.params.threadId,isHidden:false}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
+            console.log(`INFO User ${req.user.login} was granted threads from ${req.params.threadId} ${getTime()}`)
+            return res.json({threads:threads,thread:thread,status:200})
+        }
     }
     catch (err){
         console.log(`ERROR ${err} ${getTime()}`)
@@ -71,8 +86,14 @@ router.get('/subthread/:threadId',async(req,res)=>{
     console.log(`INFO User ${req.user.login} is requesting thread details from ${req.params.threadId} ${getTime()}`)
     try{
         const thread = await Thread.findById(req.params.threadId)
-        console.log(`INFO User ${req.user.login} was granted thread details from ${req.params.threadId} ${getTime()}`)
-        return res.json({thread:thread,status:200})
+        const user = await User.findById(req.user.id)
+        if(user && user.isAcceptedByAdmin){
+            console.log(`INFO User ${req.user.login} was granted thread details from ${req.params.threadId} ${getTime()}`)
+            return res.json({thread:thread,status:200})
+        }
+        else{
+            return res.status(401).json({message:"Unauthorized"})
+        }
     }
     catch (err){
         console.log(`ERROR ${err} ${getTime()}`)
@@ -125,7 +146,7 @@ router.post('/root',async(req,res)=>{
         console.log(`INFO User ${req.user.login} is trying to post a root thread ${getTime()}`)
         const rootMods = await User.find({isRootMod:true}).distinct('_id')
         const user = await User.findById(req.user.id)
-        if(user.isAdmin || user.isRootMod){
+        if(user.isAcceptedByAdmin && (user.isAdmin || user.isRootMod)){
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).slice(0,20)
             const newThread = new Thread({
                 title:req.body.title,
@@ -165,7 +186,7 @@ router.post('/subthread/:threadId',async(req,res)=>{
         const user = await User.findById(req.user.id)
         const rootModId = Array.from(new Set(
             [...parentThread.rootModId, ...parentThread.modsThreadId].map(x => x.toString()))).map(x => new mongoose.Types.ObjectId(x));
-        if(user._id && !parentThread.blockedId.some(x => x.equals(user._id)) && !parentThread.isClosed && (parentThread.modsThreadId.some(x => x.equals(user._id)) || parentThread.rootModId.some(x => x.equals(user._id)))){
+        if(user.isAcceptedByAdmin && user._id && !parentThread.blockedId.some(x => x.equals(user._id)) && !parentThread.isClosed && (parentThread.modsThreadId.some(x => x.equals(user._id)) || parentThread.rootModId.some(x => x.equals(user._id)))){
             const newThread = new Thread({
                 title:req.body.title,
                 parentThreadId:parentThread._id,
@@ -195,7 +216,7 @@ router.post('/subthread/:threadId',async(req,res)=>{
         }
         else{
             console.log(`ERROR User ${req.user.id} failed to post a subthread to ${parentThread._id} ${getTime()}`)
-            return res.status(400).json({error:"User ${req.user.id} failed to post a subthread to ${parentThread._id}"})
+            return res.status(400).json({error:`User ${req.user.id} failed to post a subthread to ${parentThread._id}`})
         }
     }
     catch(err){
@@ -211,6 +232,7 @@ router.post('/:threadId/block/:userId',async(req,res)=>{
         const userToBeBlocked = await User.findById(req.params.userId)
         const blocked = thread.blockedId
         if(
+            user.isAcceptedByAdmin && 
             !blocked.some(x => x.equals(user._id)) && 
             !blocked.some(x => x.equals(userToBeBlocked._id)) && 
             !userToBeBlocked.isAdmin &&
@@ -254,6 +276,7 @@ router.post('/:threadId/unblock/:userId',async(req,res)=>{
         const blocked = thread.blockedId
         if(
             user && 
+            user.isAcceptedByAdmin &&
             userToBeUnblocked &&
             blocked.some(x => x.equals(userToBeUnblocked._id)) && 
             !blocked.some(x => x.equals(user._id)) && 
@@ -296,7 +319,8 @@ router.post('/:threadId/givemod/:userId',async(req,res)=>{
         const user = await User.findById(req.user.id)
         if(req.params.threadId!='root'){
         const thread = await Thread.findById(req.params.threadId)
-        if(thread && (user._id != req.params.userId && 
+        if(thread && (user.isAcceptedByAdmin && 
+                        user._id != req.params.userId && 
                         thread.creatorId !== req.params.userId && 
                         (user.isRootMod || user.isAdmin) ||
                         (thread.rootModId.some(x => x.equals(user._id)) && ((thread.rootModId.some(x => x.equals(req.params.userId)) || thread.modsThreadId.some(x => x.equals(req.params.userId))))) ||
@@ -544,10 +568,17 @@ router.get('/:threadId/replies/:postId/:page/:limit',async(req,res)=>{
     console.log(`INFO User ${req.user.login} wants replies from ${req.params.postId} ${getTime()}`)
     try{
         const {page,limit} = req.params
-        const post = await Post.findById(req.params.postId)
-        const replies = await Post.find({isHidden:false,refersToPost:post._id}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
-        console.log(`INFO User ${req.user.login} was granted replies from ${req.params.postId} ${getTime()}`)
-        return res.status(200).json({replies:replies})
+        const user = await User.findById(req.user.id)
+        if(user && user.isAcceptedByAdmin){
+            const post = await Post.findById(req.params.postId)
+            const replies = await Post.find({isHidden:false,refersToPost:post._id}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
+            console.log(`INFO User ${req.user.login} was granted replies from ${req.params.postId} ${getTime()}`)
+            return res.status(200).json({replies:replies})
+        }
+        else{
+            return res.status(401).json({message:"Unauthorized"})
+        }
+        
     }
     catch(err){
         console.log(`ERROR ${err} ${getTime()}`)
@@ -558,6 +589,10 @@ router.get('/:threadId/posts/postDetails/:postId',async(req,res)=>{
     console.log(`INFO User ${req.user.login} wants post details ${req.params.postId} ${getTime()}`)
     try{
         const post = await Post.findOne({_id:req.params.postId,isHidden:false})
+        const user = await User.findById(req.user.id)
+        if(!user || !user.isAcceptedByAdmin){
+            return res.status(401).json({message:"Unauthorized"})
+        }
         console.log(`INFO User ${req.user.login} was granted post details ${req.params.postId} ${getTime()}`)
         return res.json({post:post,status:200})
     }
@@ -590,6 +625,10 @@ router.get('/:threadId/posts/:page/:limit',async(req,res)=>{
     console.log(`INFO User ${req.user.login} wants posts from ${req.params.threadId} ${getTime()}`)
     try{
         const {page,limit} = req.params
+        const user = await User.findById(req.user.id)
+        if(!user || !user.isAcceptedByAdmin){
+            return res.status(401).json({message:"Unauthorized"})
+        }
         const posts = await Post.find({parentThreadId:req.params.threadId,isHidden:false,refersToPost:null}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
         console.log(`INFO User ${req.user.login} was granted posts from ${req.params.threadId} ${getTime()}`)
         return res.json({posts:posts,status:200})
@@ -604,7 +643,7 @@ router.post(`/:threadId/post`,async(req,res)=>{
         console.log(`INFO User ${req.user.login} is trying to post a post to subthread ${req.params.threadId} ${getTime()}`)
         const parentThread = await Thread.findById(req.params.threadId)
         const user = await User.findById(req.user.id)
-        if(user._id && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !parentThread.isClosed){
+        if(user._id && user.isAcceptedByAdmin && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !parentThread.isClosed){
             const parentTags = parentThread.tags
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).filter(x => parentTags.includes(x)).slice(0,20)
             const newPost = new Post({title:req.body.title,
@@ -646,7 +685,7 @@ router.post('/:threadId/reply/:postId',async(req,res)=>{
         const parentThread = await Thread.findById(req.params.threadId)
         const replyPost = await Post.findById(req.params.postId)
         const user = await User.findById(req.user.id)
-        if(user && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !replyPost.isClosed){
+        if(user && user.isAcceptedByAdmin && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !replyPost.isClosed){
             const parentTags = parentThread.tags
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).filter(x => parentTags.includes(x)).slice(0,20)
             const newPost = new Post({title:req.body.title,
@@ -685,6 +724,10 @@ router.post('/:threadId/reply/:postId',async(req,res)=>{
 router.get('/:threadId/:postId/likes',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} tried getting post ${req.params.postId} likes ${getTime()}`)
+        const user = await User.findById(req.user.id)
+        if(!user || !user.isAcceptedByAdmin){
+            return res.json({status:400})
+        }
         const post = await Post.findById(req.params.postId)
         return res.json({likes:post.likes,disLikes:post.disLikes,status:200})
     }
@@ -698,7 +741,7 @@ router.post('/:threadId/:postId/likes',async(req,res)=>{
         console.log(`INFO ${req.user.login} is giving thread a (dis)like ${getTime()}`)
         const user = await User.findById(req.user.id)
         const post = await Post.findById(req.params.postId)
-        if(user && post){
+        if(user && post && user.isAcceptedByAdmin){
             if(req.body.like === 'like'){
                 if(post.userLikesId.find((x) => x.equals(user._id))){
                     const updated = await Post.findByIdAndUpdate(

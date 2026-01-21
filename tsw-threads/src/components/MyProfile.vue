@@ -1,19 +1,14 @@
 <script setup>
-import {onMounted, ref} from "vue"
+import {onMounted,onUnmounted, ref} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
-import {io} from "socket.io-client"
-const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
+import { socket } from "./socket"
 
 const router = useRouter()
 
 const me = ref({})
 const password = ref('')
 const repeatedPassword = ref('')
-
-socket.on('user',(user)=>{
-    me.value = user
-})
 
 function getMyData(){
     const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
@@ -35,9 +30,17 @@ function seeAllUsers(){
 function seeHiddenPosts(){
     router.push('/hidden')
 }
+function setMyData(user){
+    me.value = user
+}
 onMounted(()=>{
+    if (!socket.connected) socket.connect();
     getMyData()
+    socket.on('user',setMyData)
 })
+onUnmounted(()=>{
+    socket.off('user',setMyData)
+  })
 
 </script>
 <template>

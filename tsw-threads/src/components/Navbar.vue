@@ -1,10 +1,9 @@
 <script setup>
 import {useRouter} from "vue-router"
-import {ref} from 'vue'
+import {ref,onMounted} from 'vue'
 import axios from "axios"
-
+import { socket } from "./socket"
 const router = useRouter()
-
 const me = ref({})
 const tag = ref('')
 
@@ -16,6 +15,8 @@ function goToRootPage(){
 }
 function logout(){
     const fetch = axios.post("https://localhost/api/auth/logout").then(()=>{
+        socket.removeAllListeners()
+        socket.disconnect()
         router.push("/")
     }).catch((err)=>{
         console.log(err)
@@ -28,8 +29,10 @@ function search(){
     console.log(err)
   })
 }
+onMounted(()=>{
+    if (!socket.connected) socket.connect();
+})
 </script>
-
 <template>
   <nav class="navbar">
     <div class="nav-left">

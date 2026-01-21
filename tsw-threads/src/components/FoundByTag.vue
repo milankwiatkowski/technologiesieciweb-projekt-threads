@@ -2,8 +2,6 @@
 import {ref,onMounted, onUnmounted, computed} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
-import {io} from "socket.io-client"
-const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 
 const route = useRoute();
 const router = useRouter()

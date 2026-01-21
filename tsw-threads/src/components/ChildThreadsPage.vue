@@ -2,9 +2,7 @@
 import {ref,onMounted, watch, onUnmounted, computed} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
-import {io} from "socket.io-client"
-
-const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
+import { socket } from "./socket"
 const lastThreadPage = ref(Number(localStorage.getItem("lastThreadPage")) || 1)
 const lastPostPage = ref(Number(localStorage.getItem("lastPostPage")) || 1)
 const tdamount = ref(0)
@@ -155,6 +153,7 @@ function onThreadDeleted(obj) {
   tdamount.value -= 1
 }
 onMounted(()=>{
+  if (!socket.connected) socket.connect();
   getMyData()
   socket.on("blockedUser", onBlockedUser)
   socket.on("unblockedUser", onUnblockedUser)
@@ -174,7 +173,6 @@ onUnmounted(() => {
   localStorage.setItem("lastThreadPage",lastThreadPage.value)
   localStorage.setItem("lastPostPage",lastPostPage.value)
   socket.emit("thread:leave", { threadId: threadId.value })
-  socket.disconnect()
 })
 watch(
   () => route.params.threadId,

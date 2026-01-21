@@ -2,8 +2,7 @@
 import {onMounted,onUnmounted, ref,computed} from "vue"
 import {useRoute} from "vue-router"
 import axios from "axios"
-import {io} from "socket.io-client"
-const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
+import { socket } from "./socket"
 const route = useRoute()
 
 const threadId = computed(() => route.params.threadId)
@@ -56,6 +55,7 @@ function onUnblockedUser(id){
     blockedUsersId.value = blockedUsersId.value.filter((x)=> x !== id)
 }
 onMounted(()=>{
+  if (!socket.connected) socket.connect();
   getMyData()
   getThread()
   socket.emit("thread:join", { threadId: threadId.value })
@@ -66,7 +66,6 @@ onUnmounted(() => {
   socket.off("blockedUser", onBlockedUser)
   socket.off("unblockedUser", onUnblockedUser)
   socket.emit("thread:leave", { threadId: threadId.value })
-  socket.disconnect()
 })
 </script>
 

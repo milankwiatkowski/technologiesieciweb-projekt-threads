@@ -81,7 +81,7 @@ router.post('/patch/:idUser', async (req, res) => {
     const id = req.params.idUser;
     try{
         const user = await User.findById(req.user.id)
-        if(user && user._id.equals(id)){
+        if(user && user._id.equals(id) && user.isAcceptedByAdmin){
             if(req.body.password.length>=7 && req.body.password.length<=15){
                 if(req.body.password && req.body.repeatedPassword && req.body.password === req.body.repeatedPassword){
                     let salt = crypto.randomBytes(Number(SALT_BITS));

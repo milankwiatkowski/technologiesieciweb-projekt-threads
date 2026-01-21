@@ -1,15 +1,16 @@
 <script setup>
 import axios from "axios"
-import {io} from "socket.io-client"
+import { socket } from "./socket"
 import { ref,onUnmounted,onMounted, watch } from "vue"
-const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
 const me = ref({})
 const adminMessages = ref([])
+const isHidden = ref(true)
 function pushMsg(info){
   if (!me.value?.isAdmin) return
 
   adminMessages.value.unshift(info)
   if (adminMessages.value.length > 5) adminMessages.value.pop()
+  isHidden.value = false
 }
 async function getMyData(){
     const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
@@ -31,27 +32,35 @@ watch(
     adminMessages.value = []
     detachMessageListener()
     if (isAdmin){
-      adminMessageListener()
+      if (!socket.connected) socket.connect();
+        socket.emit("adminsChat:join");
+        adminMessageListener();
+      } 
+    else {
+      socket.emit("adminsChat:leave");
     }
 })
-onMounted(()=>{
-  getMyData()
+onMounted(async ()=>{
+  if (!socket.connected) socket.connect();
+  await getMyData()
   if(me.value?.isAdmin){
     adminMessageListener()
   }
 })
 onUnmounted(() => {
   detachMessageListener()
-  socket.disconnect()
 })
 </script>
 <template>
   <div class="chat" v-if="me.isAdmin">
-    <ul v-if="adminMessages && adminMessages.length > 0">
-      <li v-for="message in adminMessages" :key="message" class="msg-item">
+    <div v-if="!isHidden">
+      <ul v-if="adminMessages && adminMessages.length > 0">
+        <li v-for="message in adminMessages" :key="message" class="msg-item">
         <p>{{ message }}</p>
       </li>
     </ul>
+    </div>
+    <button v-if="isHidden==false" @click="isHidden = true">X</button>
   </div>
 </template>
 

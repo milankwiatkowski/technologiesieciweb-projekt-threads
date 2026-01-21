@@ -2,8 +2,7 @@
 import {ref, onMounted, onUnmounted,watch} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
-import {io} from "socket.io-client"
-const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
+import { socket } from "./socket"
 const router = useRouter()
 
 const tdamount = ref(0)
@@ -96,6 +95,7 @@ function deleteThreadSocket(thread){
     tdamount.value-=1
 }
 onMounted(()=>{
+  if (!socket.connected) socket.connect();
   socket.on("threadAdded",addThreadSocket)
   socket.on("threadDeleted",deleteThreadSocket)
   socket.on("adminMessage",printAdminMessage)
@@ -108,7 +108,6 @@ onUnmounted(()=>{
   socket.off("threadAdded",addThreadSocket)
   socket.off("threadDeleted",deleteThreadSocket)
   socket.emit("thread:leave",{threadId:'root'})
-  socket.disconnect()
   localStorage.setItem("lastRootPage",1)
 })
 watch(lastPage, (newPage)=>{

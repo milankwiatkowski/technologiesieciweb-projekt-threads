@@ -11,7 +11,7 @@ const title = ref('')
 const content = ref('')
 const likes = ref(0)
 const disLikes = ref(0)
-const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
+import { socket } from "./socket"
 const post = ref({})
 const me = ref({})
 const thread = ref({})
@@ -142,6 +142,7 @@ function unblockedUser(user){
 }
 // req.app.get('io').to(`thread:${thread._id}`).emit('blockedUser',req.params.userId)
 onMounted(()=>{
+  if (!socket.connected) socket.connect();
   socket.on("liked",onLike)
   socket.on("disliked",onDislike)
   socket.on("postDeleted",onHidden)
@@ -160,9 +161,10 @@ onUnmounted(()=>{
   socket.off("disliked",onDislike)
   socket.off('postDeleted',onHidden)
   socket.off('newReply',onReply)
+  socket.off("blockedUser",blockedUser)
+  socket.off("unblockedUser",unblockedUser)
   localStorage.setItem("lastPostsPage",1)
   socket.emit("post:leave", { postId: postId.value })
-  socket.disconnect()
 })
 watch(
   () => route.params.postId,

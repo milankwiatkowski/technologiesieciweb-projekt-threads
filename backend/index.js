@@ -10,6 +10,7 @@ const {Server} = require("socket.io")
 const http = require("http")
 const cookie = require("cookie")
 const jwt = require('jsonwebtoken');
+const User = require(path.join(process.cwd(), 'models', 'User'));
 app.use(cookieParser());
 app.use(cors({
     origin:"https://localhost",
@@ -45,13 +46,31 @@ io.use((socket,next)=>{
 })
 app.set('io',io)
 io.on("connection",(socket)=>{
-    if(socket.user.isAdmin){
-        socket.join('admins')
-        socket.join('adminsChat')
-    }
-    else{
-        socket.join('users')
-    }
+    socket.on('adminsChat:join',async ()=>{
+        const user = await User.findById(socket.user.id)
+        if(user?.isAdmin){
+            socket.join('adminsChat')
+        }
+    })
+    socket.on('adminsChat:leave',async ()=>{
+        const user = await User.findById(socket.user.id)
+        if(user?.isAdmin){
+            socket.leave('adminsChat')
+        }
+    })
+    socket.on('admins:join',async ()=>{
+        const user = await User.findById(socket.user.id)
+        if(user?.isAdmin){
+            socket.join('admins')
+        }
+    })
+    socket.on('admins:leave',async ()=>{
+        const user = await User.findById(socket.user.id)
+        if(user?.isAdmin){
+            socket.leave('admins')
+        }
+    })
+    socket.join('users')
     socket.on("thread:join",({threadId})=>{
         socket.join(`thread:${threadId}`)
     })

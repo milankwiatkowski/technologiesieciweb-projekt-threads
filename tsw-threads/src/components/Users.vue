@@ -2,8 +2,7 @@
 import {onMounted,onUnmounted, ref, watch} from 'vue'
 import axios from 'axios'
 import {useRouter} from 'vue-router'
-import {io} from "socket.io-client"
-const socket = io("https://localhost",{withCredentials:true,transports: ["websocket", "polling"]})
+import { socket } from "./socket"
 
 const router = useRouter()
 const userPage = ref(Number(localStorage.getItem('userPage') || 1))
@@ -106,22 +105,26 @@ function detachAdminMessagesListener(){
     socket.off("addUserToBeAccepted",userToBeAccepted)
     socket.off("adminAdded",addAdmin)
 }
-onMounted(()=>{
-    getMyData()
+onMounted(async()=>{
+  if (!socket.connected) socket.connect();
+  await getMyData()
 })
 watch(
   ()=>me.value?.isAdmin,
   (isAdmin)=>{
       detachAdminMessagesListener()
       if (isAdmin){
+        socket.emit("admins:join");
         getUsers()
         getUsersToBeAccepted()
         adminMessagesListener()
-    }
-})
+      }
+      else{
+        socket.emit("admins:leave");
+      }
+},{ immediate: true })
 onUnmounted(() => {
   detachAdminMessagesListener()
-  socket.disconnect()
 })
 </script>
 <template>
