@@ -2,7 +2,7 @@
 import {ref,onMounted,onUnmounted, watch, computed} from "vue"
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
-import {io} from "socket.io-client"
+import AdminChat from "./AdminChat.vue";
 import HighlightedText from './HighlightedText.vue'
 import hljs from "highlight.js"
 const isEditing = ref(false)
@@ -22,10 +22,10 @@ const replyTitle = ref('')
 const router = useRouter()
 const replyContent = ref('')
 const isReplying = ref(false)
-const threadId = computed(() => route.params.threadId)
 const postId = computed(() => route.params.postId)
 const blockedUsersId = ref([])
 const postTags = ref('')
+const threadId = computed(() => post.value.parentThreadId)
 async function like(){
     const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/${postId.value}/likes`,{like:'like'},{withCredentials:true}).catch((err)=>{
         console.log(err)
@@ -60,10 +60,13 @@ async function getMyData(){
     })
 }
 async function getPostDetails(id){
-    const fetch = axios.get(`https://localhost/api/threads/${threadId.value}/posts/postDetails/${id}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/threads/posts/postDetails/${id}`,{withCredentials:true}).then((res)=>{
         post.value = res.data.post
         likes.value = res.data.post.likes
-        disLikes.value = res.data.post.disLikes}).catch((err)=>{
+        disLikes.value = res.data.post.disLikes
+        getPosts(1)
+        getThreadDetails(threadId.value)
+        }).catch((err)=>{
         console.log(err)
     })
 }
@@ -104,7 +107,7 @@ function onHidden(post){
   posts.value = posts.value.filter(x => x._id !== post._id)
 }
 async function hide(id){
-  const fetch = axios.post(`https://localhost/api/threads/post/hide/${threadId.value}/${id}`,{postId:postId.value},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`https://localhost/api/threads/post/hide/${id}`,{postId:postId.value},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
@@ -140,7 +143,6 @@ function blockedUser(user){
 function unblockedUser(user){
   blockedUsersId.value = blockedUsersId.value.filter(x => x._id !== user._id)
 }
-// req.app.get('io').to(`thread:${thread._id}`).emit('blockedUser',req.params.userId)
 onMounted(()=>{
   if (!socket.connected) socket.connect();
   socket.on("liked",onLike)
@@ -151,9 +153,6 @@ onMounted(()=>{
   socket.on("unblockedUser",unblockedUser)
   socket.emit("post:join", { postId: postId.value })
   getMyData()
-  getPostDetails(postId.value)
-  getPosts(1)
-  getThreadDetails(threadId.value)
   hljs.highlightAll()
 })
 onUnmounted(()=>{
@@ -171,9 +170,7 @@ watch(
   (newId,oldId) => {
     if (oldId) socket.emit("post:leave", { postId: oldId })
     if (newId) socket.emit("post:join", { postId: newId })
-    getPosts(1)
     getPostDetails(newId)
-    getThreadDetails(threadId.value)
   },
   { immediate: true }
 )
@@ -191,7 +188,7 @@ watch(
         <div class="post-buttons">
           <button class="btn accent" @click="like()">Like</button>
           <button class="btn accent" @click="disLike()">Dislike</button>
-          <button class="btn" v-if="!isReplying && !blockedUsersId.includes(me._id)" @click="isReplying = true">Reply</button>
+          <button class="btn" v-if="!thread.isClosed && !isReplying && !blockedUsersId.includes(me._id)" @click="isReplying = true">Reply</button>
           <button class="btn" v-if="post.creatorId === me._id" @click="setEditing()">Edit</button>
         </div>
       </div>
@@ -244,6 +241,7 @@ watch(
           <button class="btn" v-if="posts.length >= 20" @click="nextPostsPage()">Next page</button>
         </div>
   </div>
+  <AdminChat />
 </template>
 <style scoped>
 .btn{

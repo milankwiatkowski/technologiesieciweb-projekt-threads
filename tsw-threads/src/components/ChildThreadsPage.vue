@@ -1,5 +1,6 @@
 <script setup>
 import {ref,onMounted, watch, onUnmounted, computed} from "vue"
+import AdminChat from "./AdminChat.vue";
 import {useRoute, useRouter} from "vue-router"
 import axios from "axios"
 import { socket } from "./socket"
@@ -21,6 +22,7 @@ const title = ref('')
 const tags = ref('')
 const tagsPost = ref('')
 const blockedUsersId = ref([])
+const currentRoomId = ref(null)
 async function getThreads(page){
     const fetch = axios.get(`https://localhost/api/threads/sub/${threadId.value}/${page}/${10}`,{withCredentials:true}
     ).then((res)=>{
@@ -33,7 +35,7 @@ async function getThreads(page){
     })
 }
 async function getPosts(page){
-    const fetch = axios.get(`https://localhost/api/threads/${threadId.value}/posts/${page}/${20}`,{withCredentials:true}
+    const fetch = axios.get(`https://localhost/api/threads/${threadId.value}/posts/${page}/${10}`,{withCredentials:true}
     ).then((res)=>{
         posts.value = res.data.posts
         postsAmount.value = res.data.posts.length
@@ -55,12 +57,6 @@ async function addPost(){
         console.log(err)
     })
 }
-async function deletePost(postId){
-    const fetch = axios.post(`https://localhost/api/threads/post/hide/${threadId.value}/${postId}`,{},{
-        withCredentials:true}).catch((err)=>{
-        console.log(err)
-    })
-}
 
 async function goToThread(id){
     router.push(`/thread/${id}`)
@@ -69,7 +65,7 @@ async function goToRoot(){
   router.push(`/threads`)
 }
 async function goToPost(postId){
-    router.push(`/thread/${threadId.value}/post/${postId}`)
+    router.push(`/thread/postDetails/${postId}`)
 }
 async function goToModpanel(threadId){
     router.push(`/modpanel/${threadId}`)
@@ -122,7 +118,7 @@ async function hide(id){
   })
 }
 async function hidePost(id){
-  const fetch = axios.post(`https://localhost/api/threads/post/hide/${threadId.value}/${id}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`https://localhost/api/threads/post/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
@@ -140,7 +136,7 @@ function onSubthreadAdded(subthread) {
 function onPostAdded(post) {
   if (post.threadId && post.threadId !== threadId.value) return
 
-  if (posts.value.length < 20) posts.value.push(post)
+  if (posts.value.length < 10) posts.value.push(post)
   isAddingPost.value = false
   postsAmount.value += 1
 }
@@ -161,7 +157,6 @@ onMounted(()=>{
   socket.on("postAdded", onPostAdded)
   socket.on("postDeleted", onPostDeleted)
   socket.on("threadDeleted", onThreadDeleted)
-  socket.emit("thread:join", { threadId: threadId.value })
 })
 onUnmounted(() => {
   socket.off("blockedUser", onBlockedUser)
@@ -172,17 +167,20 @@ onUnmounted(() => {
   socket.off("threadDeleted", onThreadDeleted)
   localStorage.setItem("lastThreadPage",lastThreadPage.value)
   localStorage.setItem("lastPostPage",lastPostPage.value)
-  socket.emit("thread:leave", { threadId: threadId.value })
 })
 watch(
   () => route.params.threadId,
   (newId,oldId) => {
+    console.log("WATCH threadId", { oldId, newId, path: route.fullPath })
+    if (!socket.connected) socket.connect();
     if (oldId) socket.emit("thread:leave", { threadId: oldId })
     if (newId) socket.emit("thread:join", { threadId: newId })
     lastThreadPage.value = 1
     lastPostPage.value = 1
     localStorage.setItem("lastThreadPage", "1")
     localStorage.setItem("lastPostPage", "1")
+    threads.value = []
+    posts.value = []
     getThreads(1)
     getPosts(1)
   },
@@ -232,7 +230,7 @@ watch(
     >
       Reopen thread
     </button>
-    <button class="btn" v-if="me.isAdmin || (thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)" @click="isAddingThread = !isAddingThread">Add new subthread</button>
+    <button class="btn" v-if="!thread.isClosed && (me.isAdmin || thread.creatorId.toString() === me._id.toString() || (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id))))" @click="isAddingThread = !isAddingThread">Add new subthread</button>
   </div>
   <div class="posts-container">
       <div v-for="post in posts" :key="post._id" class="child-item">
@@ -246,14 +244,14 @@ watch(
           <button class="btn" @click="goToPost(post._id)">See more</button>
           <button v-if="(
                           !blockedUsersId.includes(me._id) && 
-                          ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin || post.creatorId.toString() === me._id.toString())" class="btn delete" @click="hidePost(post._id)">Delete</button>
+                          ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin || post?.creatorId?.toString?.() === me._id?.toString?.())" class="btn delete" @click="hidePost(post._id)">Delete</button>
         </div>
       </div>
       <div class="pagination">
         <button class="btn" v-if="lastPostPage !== 1" @click="prevPostPage()">Previous page</button>
-        <button class="btn" v-if="postsAmount >= 20" @click="nextPostPage()">Next page</button>
+        <button class="btn" v-if="postsAmount >= 10" @click="nextPostPage()">Next page</button>
       </div>
-      <button class="btn" v-if="!blockedUsersId.includes(me._id)" @click="isAddingPost = !isAddingPost">Add new post</button>
+      <button class="btn" v-if="!thread.isClosed && (!blockedUsersId.includes(me._id) || (blockedUsersId.includes(me._id) && thread.creatorId.toString() === me._id.toString()))" @click="isAddingPost = !isAddingPost">Add new post</button>
   </div>
   </div>
   <div class="page" v-else-if="isAddingThread">
@@ -277,6 +275,7 @@ watch(
       </form>
     </div>
   </div>
+  <AdminChat />
 </template>
 
 <style scoped>

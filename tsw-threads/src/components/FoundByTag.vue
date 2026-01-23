@@ -1,6 +1,7 @@
 <script setup>
 import {ref,onMounted, onUnmounted, computed} from "vue"
 import {useRoute, useRouter} from "vue-router"
+import AdminChat from "./AdminChat.vue";
 import axios from "axios"
 
 const route = useRoute();
@@ -21,13 +22,14 @@ async function getPosts(){
     })
 }
 
-async function hideThread(id){
-  const fetch = axios.post(`https://localhost/api/threads/post/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
+async function hidePost(pid){
+  const fetch = axios.post(`https://localhost/api/threads/post/hide/${pid}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
-async function goToThread(threadId){
-    router.push(`/thread/${threadId}/post/${postId}`)
+
+async function goToPost(postId){
+    router.push(`/thread/postDetails/${postId}`)
 }
 
 async function nextPage(){
@@ -76,8 +78,8 @@ onUnmounted(()=>{
         </div>
 
         <div class="actions">
-          <button class="btn delete" @click="hideThread(post._id)">Hide</button>
-          <button class="btn" @click="goToThread(post._id)">See more</button>
+          <button class="btn delete" @click="hidePost(post._id)">Hide</button>
+          <button class="btn" @click="goToPost(post._id)">See more</button>
         </div>
       </li>
     </ul>
@@ -87,6 +89,7 @@ onUnmounted(()=>{
       <button v-if="posts.length >= 30" @click="nextPage()">Next page</button>
     </div>
   </div>
+  <AdminChat />
 </template>
 
 <style scoped>

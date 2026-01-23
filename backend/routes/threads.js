@@ -324,7 +324,7 @@ router.post('/:threadId/givemod/:userId',async(req,res)=>{
                         thread.creatorId !== req.params.userId && 
                         (user.isRootMod || user.isAdmin) ||
                         (thread.rootModId.some(x => x.equals(user._id)) && ((thread.rootModId.some(x => x.equals(req.params.userId)) || thread.modsThreadId.some(x => x.equals(req.params.userId))))) ||
-                        (thread.modsThreadId.some(x => x.equals(user._id)) && !thread.rootThreadId.some(x => x === req.params.userId)))){
+                        (thread.modsThreadId.some(x => x.equals(user._id)) && !thread.rootModId.some(x => x.equals(req.params.userId))))){
             const stack = []
             async function getChildren(stackThread){
                 if (!stackThread) return
@@ -585,7 +585,7 @@ router.get('/:threadId/replies/:postId/:page/:limit',async(req,res)=>{
         return res.json({status:400})
     }
 })
-router.get('/:threadId/posts/postDetails/:postId',async(req,res)=>{
+router.get('/posts/postDetails/:postId',async(req,res)=>{
     console.log(`INFO User ${req.user.login} wants post details ${req.params.postId} ${getTime()}`)
     try{
         const post = await Post.findOne({_id:req.params.postId,isHidden:false})
@@ -788,11 +788,11 @@ router.post('/:threadId/:postId/likes',async(req,res)=>{
         return res.status(400).json()
     }
 }) // OK
-router.post('/post/hide/:threadId/:postId',async(req,res)=>{
+router.post('/post/hide/:postId',async(req,res)=>{
     try{
         console.log(`INFO User ${req.user.login} is trying to hide post ${req.params.postId} ${getTime()}`)
         const post = await Post.findById(req.params.postId)
-        const thread = await Thread.findById(req.params.threadId)
+        const thread = await Thread.findById(post.parentThreadId)
         const user = await User.findById(req.user.id)
         const mods = thread.modsThreadId
         const rootMods = thread.rootModId

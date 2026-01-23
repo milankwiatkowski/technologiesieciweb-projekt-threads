@@ -72,6 +72,11 @@ io.on("connection",(socket)=>{
     })
     socket.join('users')
     socket.on("thread:join",({threadId})=>{
+        for (const room of socket.rooms) {
+            if (room.startsWith("thread:")) {
+                socket.leave(room);
+            }
+        }
         socket.join(`thread:${threadId}`)
     })
     socket.on("thread:leave",({threadId})=>{

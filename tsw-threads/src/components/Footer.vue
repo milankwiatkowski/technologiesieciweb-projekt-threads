@@ -1,11 +1,8 @@
 <script setup>
-import AdminChat from "./AdminChat.vue";
 </script>
 
 <template>
   <div class="footer-wrapper">
-    <AdminChat />
-
     <footer class="footer">
       Milan Kwiatkowski 2025
     </footer>

@@ -19,7 +19,7 @@ export default createRouter({
     { path: '/myprofile', component: MyProfile },
     { path: '/thread/:threadId', component: ChildThreadsPage },
     { path: '/threads', component: RootThreads },
-    { path: '/thread/:threadId/post/:postId',component:PostPage},
+    { path: '/thread/postDetails/:postId',component:PostPage},
     { path: '/modpanel/:threadId', component: ThreadModeratorPanel },
     { path: '/rootModpanel', component: RootModeratorPanel },
     { path: '/users', component: Users },

@@ -3,10 +3,11 @@ import {onMounted,onUnmounted, ref, watch} from 'vue'
 import axios from 'axios'
 import {useRouter} from 'vue-router'
 import { socket } from "./socket"
+import AdminChat from "./AdminChat.vue";
 
 const router = useRouter()
 const userPage = ref(Number(localStorage.getItem('userPage') || 1))
-const foundUser = ref({})
+const foundUser = ref(null)
 const users = ref([])
 const usersToBeAccepted = ref([])
 const usersToShow = ref([])
@@ -33,7 +34,7 @@ async function getUsers(){
 }
 async function getUser(){
     const fetch = axios.get(`https://localhost/api/users/find/${login.value}`,{withCredentials:true}).then((res)=>{
-      foundUser.value = res.data.user
+      foundUser.value = res.data.user || null
       ifSearched.value = true
     }).catch((err)=>{
       console.log(err)
@@ -129,21 +130,21 @@ onUnmounted(() => {
 </script>
 <template>
   <div class="user-panel" v-if="me.isAdmin">
-    <form @submit.prevent="getUser" class="reply-form">
-        <input v-model="login" placeholder="Search for a user" required />
-        <button class="btn-wide" type="submit">Search</button>
-    </form>
+    <div class="reply-form">
+      <input v-model="login" placeholder="Search for a user" />
+      <button class="btn-wide" type="button" @click.stop.prevent="getUser" >Search</button>
+    </div>
     <div v-if="!ifSearched">
     <h2>Users</h2>
-    <div class="user-list">
-      <div v-for="user in usersToShow" :key="user._id" class="user-item">
-        <div class="username">{{ user.login }}</div>
-        <button v-if="!user.isAdmin" class="remove-btn" @click="deleteUser(user._id)">Remove user</button>
-        <button v-if="!user.isAdmin" class="remove-btn" @click="giveAdmin(user._id)">Make {{ user.login }} an admin</button>
+      <div class="user-list">
+        <div v-for="user in usersToShow" :key="user._id" class="user-item">
+          <div class="username">{{ user.login }}</div>
+          <button v-if="!user.isAdmin" class="remove-btn" @click="deleteUser(user._id)">Remove user</button>
+          <button v-if="!user.isAdmin" class="remove-btn" @click="giveAdmin(user._id)">Make {{ user.login }} an admin</button>
+        </div>
+        <button class="btn" v-if="userPage > 1" @click="prevPage()">Previous page</button>
+        <button class="btn" v-if="users.length >= 40" @click="nextPage()">Next page</button>
       </div>
-      <button class="btn" v-if="userPage > 1" @click="prevPage()">Previous page</button>
-      <button class="btn" v-if="users.length >= 40" @click="nextPage()">Next page</button>
-    </div>
     </div>
     <div v-else-if="foundUser">
       <h2>Searched user</h2>
@@ -169,6 +170,7 @@ onUnmounted(() => {
     </div>
 
   </div>
+  <AdminChat />
 </template>
 <style scoped>
 .user-panel {

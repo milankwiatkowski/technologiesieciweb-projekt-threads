@@ -3,6 +3,7 @@ import {onMounted,onUnmounted, ref} from "vue"
 import {useRouter} from "vue-router"
 import axios from "axios"
 import { socket } from "./socket"
+import AdminChat from "./AdminChat.vue";
 
 const router = useRouter()
 
@@ -68,6 +69,7 @@ onUnmounted(()=>{
       </form>
     </div>
   </div>
+  <AdminChat />
 </template>
 
 <style scoped>

@@ -2,6 +2,7 @@
 import {onMounted, ref ,onUnmounted} from "vue"
 import {useRoute} from "vue-router"
 import axios from "axios"
+import AdminChat from "./AdminChat.vue";
 
 const userPage = ref(Number(localStorage.getItem('userModpanelPage') || 1))
 const foundUser = ref({})
@@ -87,6 +88,7 @@ onMounted(()=>{
       </div>
     </div>
 </div>
+<AdminChat />
 </template>
 
 <style scoped>

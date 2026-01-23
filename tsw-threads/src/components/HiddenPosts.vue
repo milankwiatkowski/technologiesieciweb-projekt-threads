@@ -1,6 +1,7 @@
 <script setup>
 import {ref,onMounted, onUnmounted, computed} from "vue"
 import {useRoute, useRouter} from "vue-router"
+import AdminChat from "./AdminChat.vue";
 import axios from "axios"
 
 const route = useRoute();
@@ -74,6 +75,7 @@ onUnmounted(()=>{
       <button v-if="posts.length >= 30" @click="nextPage()">Next page</button>
     </div>
   </div>
+  <AdminChat />
 </template>
 
 <style scoped>

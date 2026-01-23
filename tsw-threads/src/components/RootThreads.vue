@@ -4,6 +4,7 @@ import {useRouter} from "vue-router"
 import axios from "axios"
 import { socket } from "./socket"
 const router = useRouter()
+import AdminChat from "./AdminChat.vue";
 
 const tdamount = ref(0)
 const threads = ref([])
@@ -25,7 +26,7 @@ async function getMyData(){
 }
 
 async function getThreads(page){
-    const fetch = axios.get(`https://localhost/api/threads/root/${page}/${30}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`https://localhost/api/threads/root/${page}/${10}`,{withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
         tdamount.value = res.data.threads.length
     }).catch((err)=>{
@@ -85,7 +86,7 @@ function printAdminMessage(info){
   }
 }
 function addThreadSocket(thread){
-    if(threads.value.length<40){
+    if(threads.value.length<10){
       threads.value.push(thread)
     }
     tdamount.value+=1
@@ -142,7 +143,7 @@ watch(lastPage, (newPage)=>{
     <div>
       <div class="pagination">
         <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-        <button v-if="tdamount >= 30" @click="nextPage()">Next page</button>
+        <button v-if="tdamount >= 10" @click="nextPage()">Next page</button>
       </div>
 
       <div v-if="me.isAdmin || me.isRootMod" class="form-wrapper">
@@ -154,6 +155,7 @@ watch(lastPage, (newPage)=>{
       </div>
     </div>
   </div>
+  <AdminChat />
 </template>
 <style scoped>
 
