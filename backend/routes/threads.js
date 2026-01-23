@@ -517,7 +517,25 @@ router.post('/hide/:threadId',async(req,res)=>{
         return res.json({status:400})
     }
 }) // OK
-
+router.post('/edit/addTags/:threadId',async(req,res)=>{
+    try{
+        console.log(`INFO user ${req.user.login} is trying to add tags to thread ${req.params.threadId}`)
+        const thread = await Thread.findById(req.params.threadId)
+        const user = await User.findById(req.user.id)
+        if(thread && user && !thread.isClosed && (thread.modsThreadId.some(x => x.equals(user._id)) || thread.rootModId.some(x => x.equals(user._id)) || user.isAdmin)){
+            const newTags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0)
+            const updatedTags = Array.from(new Set([...thread.tags,...newTags])).slice(0,20)
+            const updated = await Thread.findByIdAndUpdate(req.params.threadId,
+                { $set: {tags:updatedTags}})
+            console.log(`INFO User ${req.user.id} successfully updated thread ${req.params.threadId} ${getTime()}`)
+            return res.status(200).json({message:"ok"})
+        }
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${getTime()}`)
+        return res.status(400).json({error:"error"})
+    }
+})
 router.post('/edit/:threadId/:postId',async(req,res)=>{
     try{
         console.log(`INFO user ${req.user.login} is editing post ${req.params.postId}`)

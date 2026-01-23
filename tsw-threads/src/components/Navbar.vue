@@ -1,17 +1,24 @@
 <script setup>
-import {useRouter} from "vue-router"
-import {ref,onMounted} from 'vue'
+import {useRouter, useRoute} from "vue-router"
+import {ref,onMounted,watch} from 'vue'
 import axios from "axios"
 import { socket } from "./socket"
 const router = useRouter()
 const me = ref({})
 const tag = ref('')
-
+const route = useRoute()
 function goToMyProfile(){
     router.push("/myprofile")
 }
 function goToRootPage(){
   router.push('/threads')
+}
+function getMyData(){
+    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
+        me.value = res.data.user
+    }).catch((err)=>{
+        console.log(err)
+    })
 }
 function logout(){
     const fetch = axios.post("https://localhost/api/auth/logout").then(()=>{
@@ -32,6 +39,13 @@ function search(){
 onMounted(()=>{
     if (!socket.connected) socket.connect();
 })
+watch(
+  () => route.fullPath,
+  ()=>{
+    getMyData()
+  },
+  {immediate:true}
+)
 </script>
 <template>
   <nav class="navbar">
@@ -47,6 +61,7 @@ onMounted(()=>{
     </div>
 
     <div class="nav-right">
+      <div v-if="me.isAdmin">Administrator</div>
       <button @click="goToMyProfile()">Mój profil</button>
       <button @click="logout()">Wyloguj się</button>
     </div>

@@ -101,7 +101,7 @@ function onDislike(payload){
   likes.value = payload.likes
 }
 async function goToPost(postId){
-    router.push(`/thread/${threadId.value}/post/${postId}`)
+    router.push(`/thread/postDetails/${postId}`)
 }
 function onHidden(post){
   posts.value = posts.value.filter(x => x._id !== post._id)
@@ -189,7 +189,7 @@ watch(
           <button class="btn accent" @click="like()">Like</button>
           <button class="btn accent" @click="disLike()">Dislike</button>
           <button class="btn" v-if="!thread.isClosed && !isReplying && !blockedUsersId.includes(me._id)" @click="isReplying = true">Reply</button>
-          <button class="btn" v-if="post.creatorId === me._id" @click="setEditing()">Edit</button>
+          <button class="btn" v-if="post.creatorId === me._id && !thread.isClosed && !blockedUsersId.includes(me._id)" @click="setEditing()">Edit</button>
         </div>
       </div>
       <div v-if="isEditing && post.creatorId === me._id" class="edit-box">
