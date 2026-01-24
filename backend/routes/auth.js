@@ -88,7 +88,8 @@ router.post('/login', async (req, res,next) => {
 router.post('/register', async (req, res,next) => {
     console.log(`INFO User ${req.body.login} is trying to register ${getTime()}`)
     try{
-        if(!validator.isEmail(req.body.login)){
+        const login_remade = String(req.body.login || "").trim().toLowerCase()
+        if(!validator.isEmail(login_remade)){
             return res.status(500).json({message:"Username has to be an email!"})
         }
         else{
@@ -98,9 +99,9 @@ router.post('/register', async (req, res,next) => {
                     const users = await User.find()
                     if(users.length===0){
                         crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                            const user = new User({isAdmin:true,password:hashedPassword,isRootMod:true,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate()})
+                            const user = new User({isAdmin:true,password:hashedPassword,isRootMod:true,login:login_remade,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate()})
                             if (err) { return next(err); }
-                            console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
+                            console.log(`INFO User ${login_remade} registered succesfully ${getTime()}`)
                             await user.save()
                             return res.json({message:"Registration successful!",status:200})})
                     }
@@ -108,23 +109,23 @@ router.post('/register', async (req, res,next) => {
                         const userFound = users.filter((x) => x.login === req.body.login)
                         if(userFound.length===0){
                             crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                                const user = new User({isAdmin:false,password:hashedPassword,isRootMod:false,login:req.body.login,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
-                                console.log(`INFO User ${req.body.login} registered succesfully ${getTime()}`)
+                                const user = new User({isAdmin:false,password:hashedPassword,isRootMod:false,login:login_remade,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
+                                console.log(`INFO User ${login_remade} registered succesfully ${getTime()}`)
                                 if (err) { return next(err); }
                                 await user.save()
-                                req.app.get('io').to('adminsChat').emit('adminMessage',`INFO - User ${req.body.login} is waiting to be accepted!`)
+                                req.app.get('io').to('adminsChat').emit('adminMessage',`INFO - User ${login_remade} is waiting to be accepted!`)
                                 req.app.get('io').to('admins').emit('addUserToBeAccepted',user)
                                 return res.json({message:"Registration successful!",status:200})})
                         }
                         else{
-                            console.log(`INFO Username ${req.body.login} was already taken ${getTime()}`)
+                            console.log(`INFO Username ${login_remade} was already taken ${getTime()}`)
                             return res.status(500).json({message:"Username already taken"})
                         }
                     }
                 }
                 else{
-                    console.log(`INFO User ${req.body.login} tried to register but the password was too short!${getTime()}`)
-                    return res.status(500).json({message:"Password is too short! They should have between 7 and 15 characters"})
+                    console.log(`INFO User ${login_remade} tried to register but the password was of a wrong length!${getTime()}`)
+                    return res.status(500).json({message:"Password has a wrong length! They should have between 7 and 15 characters"})
                 }
             }
             else{

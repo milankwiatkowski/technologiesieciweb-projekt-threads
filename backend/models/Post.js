@@ -6,6 +6,7 @@ const postSchema = new Schema({
     content:String,
     parentThreadId: {
         type: Schema.Types.ObjectId,
+        ref: 'Thread',
         default: null},
     tags:[String],
     refersToPost:Schema.Types.ObjectId,

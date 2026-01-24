@@ -62,8 +62,8 @@ async function getMyData(){
 async function getPostDetails(id){
     const fetch = axios.get(`https://localhost/api/threads/posts/postDetails/${id}`,{withCredentials:true}).then((res)=>{
         post.value = res.data.post
-        likes.value = res.data.post.likes
-        disLikes.value = res.data.post.disLikes
+        likes.value = res.data.post.userLikesId.length
+        disLikes.value = res.data.post.userDislikesId.length
         getPosts(1)
         getThreadDetails(threadId.value)
         }).catch((err)=>{
@@ -177,7 +177,7 @@ watch(
 </script>
 <template>
   <button class="btn" @click="goToThread(threadId)">Go back</button>
-  <div class="thread-wrapper">
+  <div class="thread-wrapper" v-if="!thread.isHidden">
       <div class="thread-info" v-if="!isEditing">
         <div class="login">Author: {{ post.creatorLogin }}</div>
         <strong>{{ post.title }}</strong><br></br>

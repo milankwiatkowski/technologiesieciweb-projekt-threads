@@ -25,6 +25,8 @@ const tagsPost = ref('')
 const blockedUsersId = ref([])
 const isEditing = ref(false)
 const currentRoomId = ref(null)
+const newTitle = ref('')
+const isEditingTitle = ref(false)
 async function getThreads(page){
     const fetch = axios.get(`https://localhost/api/threads/sub/${threadId.value}/${page}/${10}`,{withCredentials:true}
     ).then((res)=>{
@@ -128,6 +130,15 @@ async function hidePost(id){
 async function addTags(){
   await axios.post(`https://localhost/api/threads/edit/addTags/${threadId.value}`,{tags: newTags.value},{withCredentials:true}).then(()=>{
     newTags.value = ''
+    isEditingTitle.value = false
+  }).catch((err)=>{
+    console.log(err)
+  })
+}
+
+async function changeTitle(){
+  await axios.post(`https://localhost/api/threads/edit/changeTitle/${threadId.value}`,{title: newTitle.value},{withCredentials:true}).then(()=>{
+    newTitle.value = ''
     isEditing.value = false
   }).catch((err)=>{
     console.log(err)
@@ -214,20 +225,25 @@ watch(
     >
       Go to thread modpanel
   </button>
-  <button class="btn" v-if="!isEditing && !thread.isClosed" @click="isEditing = true">Add new tags</button>
+  <button class="btn" v-if="!isEditing && !isEditingTitle && !thread.isClosed" @click="isEditing = true">Add new tags</button>
+  <button class="btn" v-if="!isEditing && !isEditingTitle && !thread.isClosed" @click="isEditingTitle = true">Change title</button>
   <button class="btn" v-else @click="isEditing = false">Back</button>
   <form v-if="isEditing" @submit.prevent="addTags(newTags)">
     <input v-model="newTags" placeholder="Add tags" />
     <button class="btn">Send</button>
   </form>
-  <div class="page" v-if="!isAddingThread && !isAddingPost">
+  <form v-if="isEditingTitle" @submit.prevent="changeTitle(newTitle)">
+    <input v-model="newTitle" placeholder="Change title" />
+    <button class="btn">Send</button>
+  </form>
+  <div class="page" v-if="!isAddingThread && !isAddingPost && !thread.isHidden">
     <div class="back-nav">
       <button v-if="thread.parentThreadId === null" class="btn" @click="goToRoot()">Go to root thread</button>
       <button v-else class="btn" @click="goToThread(thread.parentThreadId)">Go back</button>
       <div>{{ thread.title }}</div>
       <div>{{ thread.tags }}</div>
     </div>
-  <div class="thread-container">
+    <div class="thread-container">
       <div v-for="thread2 in threads" :key="thread2._id" class="child-item">
         <div class="child-info">
           <div class="title">{{ thread2.title }}</div>
@@ -251,7 +267,7 @@ watch(
     </button>
     <button class="btn" v-if="!thread.isClosed && (me.isAdmin || thread?.creatorId?.toString?.() === me?._id?.toString?.() || (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id))))" @click="isAddingThread = !isAddingThread">Add new subthread</button>
   </div>
-  <div class="posts-container">
+  <div class="posts-container" v-if="!thread.isHidden">
       <div v-for="post in posts" :key="post._id" class="child-item">
         <div class="child-info">
           <div class="creator">Author: {{ post.creatorLogin }}</div>

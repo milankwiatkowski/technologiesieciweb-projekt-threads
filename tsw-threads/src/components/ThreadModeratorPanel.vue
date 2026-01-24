@@ -104,6 +104,7 @@ onUnmounted(() => {
 
         <div class="actions" v-if="!blockedIds.includes(String(author.id))">
           <button class="btn" v-if="author.id?.toString?.() !== myId &&
+                                    thread.creatorId !== author.id &&
                                     !blockedIds.includes(String(author.id)) && 
                                     !blockedIds.includes(String(me._id)) &&
                                     (me.isAdmin || rootModIds.includes(myId) || (modIds.includes(myId) && !rootModIds.includes(String(author.id))))" @click="blockUser(author.id)">Block user</button>

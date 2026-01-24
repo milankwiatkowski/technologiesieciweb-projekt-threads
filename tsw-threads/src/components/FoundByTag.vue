@@ -78,7 +78,7 @@ onUnmounted(()=>{
         </div>
 
         <div class="actions">
-          <button class="btn delete" @click="hidePost(post._id)">Hide</button>
+          <button v-if="me.isAdmin || me?._id?.toString?.() === post?.creatorId?.toString?.()" class="btn delete" @click="hidePost(post._id)">Hide</button>
           <button class="btn" @click="goToPost(post._id)">See more</button>
         </div>
       </li>
