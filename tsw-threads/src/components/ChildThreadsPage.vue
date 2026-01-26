@@ -218,16 +218,12 @@ watch(
     >
       Close thread
   </button>
-  <button
-      v-if="(me.isAdmin || (thread.modsThreadId || []).includes(me._id) || (thread.rootModId || []).includes(me._id))"
-      class="btn"
-      @click="goToModpanel(threadId)"
-    >
-      Go to thread modpanel
-  </button>
-  <button class="btn" v-if="!isEditing && !isEditingTitle && !thread.isClosed" @click="isEditing = true">Add new tags</button>
-  <button class="btn" v-if="!isEditing && !isEditingTitle && !thread.isClosed" @click="isEditingTitle = true">Change title</button>
-  <button class="btn" v-else @click="isEditing = false">Back</button>
+  <div v-if="(me.isAdmin || (thread.modsThreadId || []).includes(me._id) || (thread.rootModId || []).includes(me._id))">
+    <button class="btn" @click="goToModpanel(threadId)" >Go to thread modpanel</button>
+    <button class="btn" v-if="!isEditing && !isEditingTitle && !thread.isClosed" @click="isEditing = true">Add new tags</button>
+    <button class="btn" v-if="!isEditing && !isEditingTitle && !thread.isClosed" @click="isEditingTitle = true">Change title</button>
+    <button class="btn" v-else @click="isEditing = false">Back</button>
+  </div>
   <form v-if="isEditing" @submit.prevent="addTags(newTags)">
     <input v-model="newTags" placeholder="Add tags" />
     <button class="btn">Send</button>

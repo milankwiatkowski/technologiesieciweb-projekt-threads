@@ -71,10 +71,10 @@ onUnmounted(()=>{
         <div class="thread-info">
           <strong>{{ post.creatorLogin }}</strong><br></br>
           <div class="title">{{ post.title }}</div>
-          <div class="content">
-            <div v-if="post.content.length<30">{{ post.content }}</div>
-            <div v-else>{{ post.content.slice(0,25) + '...' }}</div>
-          </div>
+          <!-- <div class="content"> -->
+            <!-- <div v-if="post.content.length<30">{{ post.content }}</div> -->
+            <!-- <div v-else>{{ post.content.slice(0,25) + '...' }}</div> -->
+          <!-- </div> -->
         </div>
 
         <div class="actions">
