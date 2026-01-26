@@ -147,7 +147,7 @@ router.post('/root',async(req,res)=>{
         console.log(`INFO User ${req.user.login} is trying to post a root thread ${getTime()}`)
         const rootMods = await User.find({isRootMod:true}).distinct('_id')
         const user = await User.findById(req.user.id)
-        if(user && user.isAcceptedByAdmin && (user.isAdmin || user.isRootMod)){
+        if(user && user.isAcceptedByAdmin && !user.isBlockedEverywhere && (user.isAdmin || user.isRootMod)){
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).slice(0,20)
             const newThread = new Thread({
                 title:req.body.title,
@@ -187,7 +187,7 @@ router.post('/subthread/:threadId',async(req,res)=>{
         const user = await User.findById(req.user.id)
         const rootModId = Array.from(new Set(
             [...parentThread.rootModId, ...parentThread.modsThreadId].map(x => x.toString()))).map(x => new mongoose.Types.ObjectId(x));
-        if(user && user.isAcceptedByAdmin && user._id && !parentThread.blockedId.some(x => x.equals(user._id)) && !parentThread.isClosed && (parentThread.modsThreadId.some(x => x.equals(user._id)) || parentThread.rootModId.some(x => x.equals(user._id)))){
+        if(user && user.isAcceptedByAdmin && user._id && !user.isBlockedEverywhere && !parentThread.blockedId.some(x => x.equals(user._id)) && !parentThread.isClosed && (parentThread.modsThreadId.some(x => x.equals(user._id)) || parentThread.rootModId.some(x => x.equals(user._id)))){
             const newThread = new Thread({
                 title:req.body.title,
                 parentThreadId:parentThread._id,
@@ -234,7 +234,8 @@ router.post('/:threadId/block/:userId',async(req,res)=>{
         const blocked = thread.blockedId
         if(
             user &&
-            user.isAcceptedByAdmin && 
+            user.isAcceptedByAdmin &&
+            !user.isBlockedEverywhere && 
             !blocked.some(x => x.equals(user._id)) && 
             !blocked.some(x => x.equals(userToBeBlocked._id)) && 
             !userToBeBlocked.isAdmin &&
@@ -279,6 +280,7 @@ router.post('/:threadId/unblock/:userId',async(req,res)=>{
         if(
             user && 
             user.isAcceptedByAdmin &&
+            !user.isBlockedEverywhere &&
             userToBeUnblocked &&
             blocked.some(x => x.equals(userToBeUnblocked._id)) && 
             !blocked.some(x => x.equals(user._id)) && 
@@ -686,7 +688,7 @@ router.post(`/:threadId/post`,async(req,res)=>{
         console.log(`INFO User ${req.user.login} is trying to post a post to subthread ${req.params.threadId} ${getTime()}`)
         const parentThread = await Thread.findById(req.params.threadId)
         const user = await User.findById(req.user.id)
-        if(user && user._id && user.isAcceptedByAdmin && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !parentThread.isClosed){
+        if(user && user._id && user.isAcceptedByAdmin && !user.isBlockedEverywhere && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !parentThread.isClosed){
             const parentTags = parentThread.tags
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).filter(x => parentTags.includes(x)).slice(0,20)
             const newPost = new Post({title:req.body.title,
@@ -728,7 +730,7 @@ router.post('/:threadId/reply/:postId',async(req,res)=>{
         const parentThread = await Thread.findById(req.params.threadId)
         const replyPost = await Post.findById(req.params.postId)
         const user = await User.findById(req.user.id)
-        if(user && user.isAcceptedByAdmin && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !replyPost.isClosed){
+        if(user && user.isAcceptedByAdmin && !user.isBlockedEverywhere && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !replyPost.isClosed){
             const parentTags = parentThread.tags
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).filter(x => parentTags.includes(x)).slice(0,20)
             const newPost = new Post({title:req.body.title,

@@ -99,7 +99,7 @@ router.post('/register', async (req, res,next) => {
                     const users = await User.find()
                     if(users.length===0){
                         crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                            const user = new User({isAdmin:true,password:hashedPassword,isRootMod:true,login:login_remade,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,registrationDate:getDate()})
+                            const user = new User({isAdmin:true,password:hashedPassword,isRootMod:true,login:login_remade,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:true,isBlockedEverywhere:false,registrationDate:getDate()})
                             if (err) { return next(err); }
                             console.log(`INFO User ${login_remade} registered succesfully ${getTime()}`)
                             await user.save()
@@ -109,7 +109,7 @@ router.post('/register', async (req, res,next) => {
                         const userFound = users.filter((x) => x.login === req.body.login)
                         if(userFound.length===0){
                             crypto.pbkdf2(req.body.password, salt, 310000, 32, HASH_FUNCTION, async (err, hashedPassword) => {
-                                const user = new User({isAdmin:false,password:hashedPassword,isRootMod:false,login:login_remade,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false})
+                                const user = new User({isAdmin:false,password:hashedPassword,isRootMod:false,login:login_remade,salt:salt,modOfThreadsId:[],isAcceptedByAdmin:false,isBlockedEverywhere:false})
                                 console.log(`INFO User ${login_remade} registered succesfully ${getTime()}`)
                                 if (err) { return next(err); }
                                 await user.save()
@@ -147,7 +147,8 @@ router.get('/me',passport.authenticate('jwt',{session:false}), async (req, res) 
             isRootMod: req.user.isRootMod,
             login: req.user.login,
             isAdmin: req.user.isAdmin,
-            isAcceptedByAdmin: req.user.isAcceptedByAdmin};
+            isAcceptedByAdmin: req.user.isAcceptedByAdmin,
+            isBlockedEverywhere: req.user.isBlockedEverywhere};
         return res.json({user:userData,status:200})
     }
     catch(err){

@@ -15,6 +15,16 @@ const admins = ref([])
 const login = ref('')
 const ifSearched = ref(false)
 const me = ref({})
+async function blockEverywhere(id){
+  const fetch = axios.post(`https://localhost/api/users/admin/blockEverywhere/${id}`,{},{withCredentials:true}).catch((err)=>{
+    console.log(err)
+  })
+}
+async function unblockEverywhere(id){
+  const fetch = axios.post(`https://localhost/api/users/admin/unblockEverywhere/${id}`,{},{withCredentials:true}).catch((err)=>{
+    console.log(err)
+  })
+}
 async function getMyData(){
     const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
@@ -141,6 +151,8 @@ onUnmounted(() => {
           <div class="username">{{ user.login }}</div>
           <button v-if="!user.isAdmin" class="remove-btn" @click="deleteUser(user._id)">Remove user</button>
           <button v-if="!user.isAdmin" class="remove-btn" @click="giveAdmin(user._id)">Make {{ user.login }} an admin</button>
+          <button class="remove-btn" v-if="!user.isAdmin && !user.isBlockedEverywhere" @click="blockEverywhere(user._id)">Block {{ user.login }} globally</button>
+          <button class="remove-btn" v-else-if="!user.isAdmin && user.isBlockedEverywhere" @click="unblockEverywhere(user._id)">Unblock {{ user.login }} globally</button>
         </div>
         <button class="btn" v-if="userPage > 1" @click="prevPage()">Previous page</button>
         <button class="btn" v-if="users.length >= 40" @click="nextPage()">Next page</button>
@@ -151,6 +163,8 @@ onUnmounted(() => {
         <div class="username">{{ foundUser.login }}</div>
         <button v-if="!foundUser.isAdmin" class="remove-btn" @click="deleteUser(foundUser._id)">Remove user</button>
         <button v-if="!foundUser.isAdmin" class="remove-btn" @click="giveAdmin(foundUser._id)">Make {{ foundUser.login }} an admin</button>
+        <button class="remove-btn" v-if="!foundUser.isAdmin && !foundUser.isBlockedEverywhere" @click="blockEverywhere(foundUser._id)">Block {{ foundUser.login }} globally</button>
+        <button class="remove-btn" v-else-if="!foundUser.isAdmin && foundUser.isBlockedEverywhere" @click="unblockEverywhere(foundUser._id)">Unblock {{ foundUser.login }} globally</button>
     </div>
     <div v-else>
       <div>

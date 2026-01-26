@@ -77,7 +77,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="modpanel">
+  <div class="modpanel" v-if="!me.isBlockedEverywhere">
     <div v-if="thread && thread.title" class="title">
       Welcome to ModPanel for Thread "{{ thread.title }}"
     </div>

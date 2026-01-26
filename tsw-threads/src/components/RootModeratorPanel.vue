@@ -58,7 +58,7 @@ onMounted(()=>{
 })
 </script>
 <template>
-<div class="user-panel" v-if="me.isAdmin || me.isRootMod">
+<div class="user-panel" v-if=" !me.isBlockedEverywhere && (me.isAdmin || me.isRootMod)">
     <form @submit.prevent="getUser" class="reply-form">
         <input v-model="login" placeholder="Search for a user" required />
         <button class="btn-wide" type="submit">Search</button>

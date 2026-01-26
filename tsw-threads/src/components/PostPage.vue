@@ -188,11 +188,11 @@ watch(
         <div class="post-buttons">
           <button class="btn accent" @click="like()">Like</button>
           <button class="btn accent" @click="disLike()">Dislike</button>
-          <button class="btn" v-if="!thread.isClosed && !isReplying && !blockedUsersId.includes(me._id)" @click="isReplying = true">Reply</button>
-          <button class="btn" v-if="post.creatorId === me._id && !thread.isClosed && !blockedUsersId.includes(me._id)" @click="setEditing()">Edit</button>
+          <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && !isReplying && !blockedUsersId.includes(me._id)" @click="isReplying = true">Reply</button>
+          <button class="btn" v-if="!me.isBlockedEverywhere && post.creatorId === me._id && !thread.isClosed && !blockedUsersId.includes(me._id)" @click="setEditing()">Edit</button>
         </div>
       </div>
-      <div v-if="isEditing && post.creatorId === me._id" class="edit-box">
+      <div v-if="isEditing && post.creatorId === me._id && !me.isBlockedEverywhere" class="edit-box">
         <form @submit="editPost(thread._id,post._id)" class="edit-form">
           <div class="edit-group">
             <strong>Current title:</strong> {{ post.title }}
@@ -206,7 +206,7 @@ watch(
           <button class="btn accent" type="submit">Submit editing</button>
         </form>
       </div>
-      <div v-if="isReplying" class="replying">
+      <div v-if="isReplying && !me.isBlockedEverywhere" class="replying">
               <div>
                 <form @submit="reply()" class="edit-form">
                   <div class="edit-group">
@@ -231,7 +231,7 @@ watch(
               </div>
               <div class="reply-actions">
                 <button class="btn" @click="goToPost(post2._id)">See more</button>
-                <button v-if="(!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin)" class="btn delete" @click="hide(post2._id)">Delete</button>
+                <button v-if="!me.isBlockedEverywhere && (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin)" class="btn delete" @click="hide(post2._id)">Delete</button>
               </div>
             </div>
           </div>

@@ -47,7 +47,8 @@ router.get(`/:page/:limit`,isAdmin, async (req, res) => {
                 registrationnDate:x.registrationDate,
                 isRootMod:x.isRootMod,
                 modOfThreadsId:x.modOfThreadsId,
-                isAcceptedByAdmin:x.isAcceptedByAdmin
+                isAcceptedByAdmin:x.isAcceptedByAdmin,
+                isBlockedEverywhere: x.isBlockedEverywhere
             }))
             console.log(`INFO User ${req.user.login} was granted the list of all users ${getTime()}`)
             return res.status(200).json({users:mapped_users})
@@ -165,6 +166,50 @@ router.post(`/notToBeAccepted/:id`,isAdmin, async (req, res,next) => {
         next(err)
     }
 });
+router.post('/admin/blockEverywhere/:id',isAdmin,async(req,res,next)=>{
+    console.log(`INFO Admin ${req.user.login} is trying to globally block to user ${req.params.id} ${getTime()}`)
+    try{
+        const userRequest = await User.findById(req.user.id)
+        const userToBeBlocked = await User.findById(req.params.id)
+        if(userRequest.isAdmin && !userRequest.isBlockedEverywhere && !userToBeBlocked.isBlockedEverywhere){
+            const user = await User.findByIdAndUpdate(req.params.id,
+            { $set: {isBlockedEverywhere:true}},
+            { new:true, runValidators:true})
+            console.log(`INFO Admin ${req.user.login} successfully globally blocked to user ${req.params.id} ${getTime()}`)
+            return res.json({user:user,status:200})
+        }
+        else{
+            console.log("Forbidden")
+            return res.status(403).json({message:"Forbidden"})
+        }
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${getTime()}`)
+        next(err)
+    }
+})
+router.post('/admin/unblockEverywhere/:id',isAdmin,async(req,res,next)=>{
+    console.log(`INFO Admin ${req.user.login} is trying to globally unblock to user ${req.params.id} ${getTime()}`)
+    try{
+        const userRequest = await User.findById(req.user.id)
+        const userToBeBlocked = await User.findById(req.params.id)
+        if(userRequest.isAdmin && !userRequest.isBlockedEverywhere && userToBeBlocked.isBlockedEverywhere){
+            const user = await User.findByIdAndUpdate(req.params.id,
+            { $set: {isBlockedEverywhere:false}},
+            { new:true, runValidators:true})
+            console.log(`INFO Admin ${req.user.login} successfully globally unblocked to user ${req.params.id} ${getTime()}`)
+            return res.json({user:user,status:200})
+        }
+        else{
+            console.log("Forbidden")
+            return res.status(403).json({message:"Forbidden"})
+        }
+    }
+    catch(err){
+        console.log(`ERROR ${err} ${getTime()}`)
+        next(err)
+    }
+})
 router.post(`/giveAdmin/:id`,isAdmin,async(req,res,next)=>{
     console.log(`INFO Admin ${req.user.login} is trying to give admin to user ${req.params.id} ${getTime()}`)
     try{

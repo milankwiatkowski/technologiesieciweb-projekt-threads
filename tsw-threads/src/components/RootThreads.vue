@@ -146,7 +146,7 @@ watch(lastPage, (newPage)=>{
         <button v-if="tdamount >= 10" @click="nextPage()">Next page</button>
       </div>
 
-      <div v-if="me.isAdmin || me.isRootMod" class="form-wrapper">
+      <div v-if="!me.isBlockedEverywhere && (me.isAdmin || me.isRootMod)" class="form-wrapper">
         <form @submit.prevent="addThread">
           <input v-model="title" placeholder="Add title" required />
           <input v-model="tags" placeholder="Add tags" required />

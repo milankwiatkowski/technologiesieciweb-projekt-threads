@@ -9,7 +9,8 @@ const userSchema = new Schema({
     password: Buffer,
     salt: Buffer,
     modOfThreadsId:[Schema.Types.ObjectId],
-    isAcceptedByAdmin: Boolean
+    isAcceptedByAdmin: Boolean,
+    isBlockedEverywhere: Boolean,
 });
 
 module.exports = model('User', userSchema);

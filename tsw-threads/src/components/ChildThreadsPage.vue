@@ -218,7 +218,7 @@ watch(
     >
       Close thread
   </button>
-  <div v-if="(me.isAdmin || (thread.modsThreadId || []).includes(me._id) || (thread.rootModId || []).includes(me._id))">
+  <div v-if="(!me.isBlockedEverywhere && (me.isAdmin || (thread.modsThreadId || []).includes(me._id) || (thread.rootModId || []).includes(me._id)))">
     <button class="btn" @click="goToModpanel(threadId)" >Go to thread modpanel</button>
     <button class="btn" v-if="!isEditing && !isEditingTitle && !thread.isClosed" @click="isEditing = true">Add new tags</button>
     <button class="btn" v-if="!isEditing && !isEditingTitle && !thread.isClosed" @click="isEditingTitle = true">Change title</button>
@@ -261,7 +261,7 @@ watch(
     >
       Reopen thread
     </button>
-    <button class="btn" v-if="!thread.isClosed && (me.isAdmin || thread?.creatorId?.toString?.() === me?._id?.toString?.() || (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id))))" @click="isAddingThread = !isAddingThread">Add new subthread</button>
+    <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && (me.isAdmin || thread?.creatorId?.toString?.() === me?._id?.toString?.() || (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id))))" @click="isAddingThread = !isAddingThread">Add new subthread</button>
   </div>
   <div class="posts-container" v-if="!thread.isHidden">
       <div v-for="post in posts" :key="post._id" class="child-item">
@@ -274,7 +274,8 @@ watch(
         <div class="child-actions">
           <button class="btn" @click="goToPost(post._id)">See more</button>
           <button v-if="(
-                          !blockedUsersId.includes(me._id) && 
+                          !blockedUsersId.includes(me._id) &&
+                          !me?.isBlockedEverywhere &&
                           ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin || post?.creatorId?.toString?.() === me._id?.toString?.())" class="btn delete" @click="hidePost(post._id)">Delete</button>
         </div>
       </div>
@@ -282,12 +283,12 @@ watch(
         <button class="btn" v-if="lastPostPage !== 1" @click="prevPostPage()">Previous page</button>
         <button class="btn" v-if="postsAmount >= 10" @click="nextPostPage()">Next page</button>
       </div>
-      <button class="btn" v-if="!thread.isClosed && (!blockedUsersId.includes(me._id) || (blockedUsersId.includes(me._id) && thread.creatorId.toString() === me._id.toString()))" @click="isAddingPost = !isAddingPost">Add new post</button>
+      <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && (!blockedUsersId.includes(me._id) || (blockedUsersId.includes(me._id) && thread.creatorId.toString() === me._id.toString()))" @click="isAddingPost = !isAddingPost">Add new post</button>
   </div>
   </div>
   <div class="page" v-else-if="isAddingThread">
     <button class="btn" @click="isAddingThread = false">Back</button>
-    <div v-if="!thread.isClosed && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) && !blockedUsersId.includes(me._id) && !isAddingPost" class="reply-box">
+    <div v-if="!thread.isClosed && !me.isBlockedEverywhere && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) && !blockedUsersId.includes(me._id) && !isAddingPost" class="reply-box">
       <form @submit.prevent="addThread" class="reply-form">
         <input v-model="title" placeholder="Add title" required />
         <input v-model="tags" placeholder="Add tags" />
@@ -297,7 +298,7 @@ watch(
   </div>
   <div class="page" v-else-if="isAddingPost">
     <button class="btn" @click="isAddingPost = false">Back</button>
-    <div v-if="!thread.isClosed && !blockedUsersId.includes(me._id) && !isAddingThread" class="reply-box">
+    <div v-if="!thread.isClosed && !me.isBlockedEverywhere && !blockedUsersId.includes(me._id) && !isAddingThread" class="reply-box">
       <form @submit.prevent="addPost" class="reply-form">
         <input v-model="title" placeholder="Add title" required />
         <textarea v-model="content" placeholder="Add content" required></textarea>
