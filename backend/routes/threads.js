@@ -688,7 +688,7 @@ router.post(`/:threadId/post`,async(req,res)=>{
         console.log(`INFO User ${req.user.login} is trying to post a post to subthread ${req.params.threadId} ${getTime()}`)
         const parentThread = await Thread.findById(req.params.threadId)
         const user = await User.findById(req.user.id)
-        if(user && user._id && user.isAcceptedByAdmin && !user.isBlockedEverywhere && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !parentThread.isClosed){
+        if(user && user._id && user.isAcceptedByAdmin && !user.isBlockedEverywhere && !parentThread.blockedId.includes(user._id) && !parentThread.isClosed && !parentThread.isHidden){
             const parentTags = parentThread.tags
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).filter(x => parentTags.includes(x)).slice(0,20)
             const newPost = new Post({title:req.body.title,
@@ -842,7 +842,7 @@ router.post('/post/hide/:postId',async(req,res)=>{
         const mods = thread.modsThreadId
         const rootMods = thread.rootModId
         if(user && mods.includes(user._id) || rootMods.includes(user._id) || req.user.isAdmin || (post.creatorId && user._id.equals(post.creatorId))){
-            if(!post.isHidden){
+            if(!post.isHidden && !thread.isHidden){
                 const update = await Post.findByIdAndUpdate(
                     req.params.postId,
                     {$set: {isHidden:true}},
