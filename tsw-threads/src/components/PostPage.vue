@@ -82,6 +82,9 @@ async function reply(){
             postTags.value = ''
         }).catch((err)=>{
         console.log(err)
+        if(err.status===402){
+          alert(err.response.data.error)
+        }
     })
 }
 async function getThreadDetails(threadId){

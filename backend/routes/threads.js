@@ -147,7 +147,8 @@ router.post('/root',async(req,res)=>{
         console.log(`INFO User ${req.user.login} is trying to post a root thread ${getTime()}`)
         const rootMods = await User.find({isRootMod:true}).distinct('_id')
         const user = await User.findById(req.user.id)
-        if(user && user.isAcceptedByAdmin && !user.isBlockedEverywhere && (user.isAdmin || user.isRootMod)){
+        if(user && user.isAcceptedByAdmin && !user.isBlockedEverywhere){
+            rootMods.push(user._id)
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).slice(0,20)
             const newThread = new Thread({
                 title:req.body.title,
@@ -217,7 +218,12 @@ router.post('/subthread/:threadId',async(req,res)=>{
         }
         else{
             console.log(`ERROR User ${req.user.id} failed to post a subthread to ${parentThread._id} ${getTime()}`)
-            return res.status(400).json({error:`User ${req.user.id} failed to post a subthread to ${parentThread._id}`})
+            if(parentThread.isClosed){
+                return res.status(402).json({error:`The thread is closed!`})
+            }
+            else{
+                return res.status(400).json({error:`User ${req.user.id} failed to post a subthread to ${parentThread._id}`})
+            }
         }
     }
     catch(err){
@@ -718,6 +724,14 @@ router.post(`/:threadId/post`,async(req,res)=>{
         console.log(`INFO User ${req.user.login} successfully added a thread ${req.params.threadId} ${getTime()}`)
         return res.status(200).json({post:newPost})
         }
+        else{
+            if(parentThread.isClosed){
+                return res.status(402).json({error:`The thread is closed!`})
+            }
+            else{
+                return res.status(400).json({error:`An error occured!`})
+            }
+        }
     }
     catch(err){
         console.log(`ERROR ${err} ${getTime()}`)
@@ -760,6 +774,15 @@ router.post('/:threadId/reply/:postId',async(req,res)=>{
         console.log(`INFO User ${req.user.login} successfully added a reply to post ${req.params.postId} ${getTime()}`)
         return res.status(200).json({message:'ok'})
         }
+        else{
+            if(parentThread.isClosed){
+                return res.status(402).json({error:"The thread is closed!"})
+            }
+            else{
+                return res.status(400).json({error:"An error occured!"})
+            }
+        }
+        
     }
     catch(err){
         console.log(`ERROR ${err} ${getTime()}`)

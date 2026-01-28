@@ -52,6 +52,9 @@ async function addThread(){
         title: title.value,tags:tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
+        if(err.status===402){
+          alert(err.response.data.error)
+        }
     })
 }
 async function addPost(){
@@ -59,6 +62,9 @@ async function addPost(){
         title: title.value, tags: tagsPost.value, content: content.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
+        if(err.status===402){
+          alert(err.response.data.error)
+        }
     })
 }
 
@@ -211,6 +217,10 @@ watch(
 
 </script>
 <template>
+      <div class="pagination">
+        <button class="btn" v-if="lastPostPage !== 1" @click="prevPostPage()">Previous page</button>
+        <button class="btn" v-if="postsAmount >= 10" @click="nextPostPage()">Next page</button>
+      </div>
     <button
       v-if="!thread.isClosed && me.isAdmin && !isEditing"
       class="btn"
@@ -278,10 +288,6 @@ watch(
                           !me?.isBlockedEverywhere &&
                           ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin || post?.creatorId?.toString?.() === me._id?.toString?.())" class="btn delete" @click="hidePost(post._id)">Delete</button>
         </div>
-      </div>
-      <div class="pagination">
-        <button class="btn" v-if="lastPostPage !== 1" @click="prevPostPage()">Previous page</button>
-        <button class="btn" v-if="postsAmount >= 10" @click="nextPostPage()">Next page</button>
       </div>
       <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && (!blockedUsersId.includes(me._id) || (blockedUsersId.includes(me._id) && thread.creatorId.toString() === me._id.toString()))" @click="isAddingPost = !isAddingPost">Add new post</button>
   </div>

@@ -118,6 +118,12 @@ watch(lastPage, (newPage)=>{
 <template>
   <!-- <button v-if="me.isAdmin" @click="deleteMany()">Delete all threads</button> -->
   <div class="container">
+    <div v-if="threads && threads.length">
+      <div class="pagination">
+        <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
+        <button v-if="tdamount >= 10" @click="nextPage()">Next page</button>
+      </div>
+    </div>
     <ul v-if="threads && threads.length > 0">
       <li v-for="thread in threads" :key="thread._id">
         <div class="thread-text">
@@ -141,12 +147,7 @@ watch(lastPage, (newPage)=>{
   </button>
     <p v-else-if="threads && threads.length === 0">No threads.</p>
     <div>
-      <div class="pagination">
-        <button v-if="lastPage !== 1" @click="prevPage()">Previous page</button>
-        <button v-if="tdamount >= 10" @click="nextPage()">Next page</button>
-      </div>
-
-      <div v-if="!me.isBlockedEverywhere && (me.isAdmin || me.isRootMod)" class="form-wrapper">
+      <div v-if="!me.isBlockedEverywhere" class="form-wrapper">
         <form @submit.prevent="addThread">
           <input v-model="title" placeholder="Add title" required />
           <input v-model="tags" placeholder="Add tags" required />
