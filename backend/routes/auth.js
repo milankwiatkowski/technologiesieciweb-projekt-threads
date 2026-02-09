@@ -68,8 +68,6 @@ router.post('/login', async (req, res,next) => {
                 else{
                     console.log(`INFO User ${req.body.login} tried logging in but failed due to an incorrect password ${getTime()}`)
                     return res.status(501).json({messaage:"Incorrect password"})
-                    console.log(`INFO User ${req.body.login} tried logging in but failed due to an incorrect password ${time}`)
-                    return res.status(501).json({message:"Incorrect password"})
                 }
             }
             else{
