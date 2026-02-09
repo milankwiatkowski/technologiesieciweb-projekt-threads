@@ -674,7 +674,7 @@ router.get('/:threadId/posts/:page/:limit',async(req,res)=>{
         if(!user || !user.isAcceptedByAdmin){
             return res.status(401).json({message:"Unauthorized"})
         }
-        const posts = await Post.find({parentThreadId:req.params.threadId,isHidden:false,refersToPost:null}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
+        const posts = await Post.find({parentThreadId:req.params.threadId,isHidden:false}).skip((page-1)*limit).limit(Number(limit)).sort({createdAt:1})
         console.log(`INFO User ${req.user.login} was granted posts from ${req.params.threadId} ${getTime()}`)
         return res.json({posts:posts,status:200})
     }

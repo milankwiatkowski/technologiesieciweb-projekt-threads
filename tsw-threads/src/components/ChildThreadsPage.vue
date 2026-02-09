@@ -240,6 +240,7 @@ watch(
       <div>{{ thread.tags }}</div>
     </div>
     <div class="thread-container">
+      <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && (me.isAdmin || thread?.creatorId?.toString?.() === me?._id?.toString?.() || (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id))))" @click="isAddingThread = !isAddingThread">Add new subthread</button>
       <div v-for="thread2 in threads" :key="thread2._id" class="child-item">
         <div class="child-info">
           <div class="title">{{ thread2.title }}</div>
@@ -249,23 +250,24 @@ watch(
           <button class="btn" @click="goToThread(thread2._id)">See more</button>
           <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button>
         </div>
+      <div class="pagination">
+        <button class="btn" v-if="lastThreadPage !== 1" @click="prevThreadPage()">Previous page</button>
+        <button class="btn" v-if="tdamount >= 10" @click="nextThreadPage()">Next page</button>
       </div>
-    <div class="pagination">
-      <button class="btn" v-if="lastThreadPage !== 1" @click="prevThreadPage()">Previous page</button>
-      <button class="btn" v-if="tdamount >= 10" @click="nextThreadPage()">Next page</button>
+      <button
+        v-if="thread.isClosed && (me.isAdmin || (thread.rootModId || []).includes(me._id)) && !isEditing"
+        class="btn-wide"
+        @click="close()"
+      >
+        Reopen thread
+      </button>
     </div>
-    <button
-      v-if="thread.isClosed && (me.isAdmin || (thread.rootModId || []).includes(me._id)) && !isEditing"
-      class="btn-wide"
-      @click="close()"
-    >
-      Reopen thread
-    </button>
-    <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && (me.isAdmin || thread?.creatorId?.toString?.() === me?._id?.toString?.() || (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id))))" @click="isAddingThread = !isAddingThread">Add new subthread</button>
   </div>
   <div class="posts-container" v-if="!thread.isHidden">
+      <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && (!blockedUsersId.includes(me._id) || (blockedUsersId.includes(me._id) && thread.creatorId.toString() === me._id.toString()))" @click="isAddingPost = !isAddingPost">Add new post</button>
       <div v-for="post in posts" :key="post._id" class="child-item">
         <div class="child-info">
+          <div v-if="post.refersToPost" @click="goToPost(post.refersToPost)" class="clickable">This post references another one! See more...</div>
           <div class="creator">Author: {{ post.creatorLogin }}</div>
           <div class="title">{{ post.title }}</div>
           <div class="tags">Tags: {{ post.tags }}</div>
@@ -283,7 +285,6 @@ watch(
         <button class="btn" v-if="lastPostPage !== 1" @click="prevPostPage()">Previous page</button>
         <button class="btn" v-if="postsAmount >= 10" @click="nextPostPage()">Next page</button>
       </div>
-      <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && (!blockedUsersId.includes(me._id) || (blockedUsersId.includes(me._id) && thread.creatorId.toString() === me._id.toString()))" @click="isAddingPost = !isAddingPost">Add new post</button>
   </div>
   </div>
   <div class="page" v-else-if="isAddingThread">
@@ -311,24 +312,56 @@ watch(
 </template>
 
 <style scoped>
-.btnback{
-    margin-bottom: 16px;
-    padding: 8px 14px;
-    color: var(--text);
-    font-size: 0.85rem;
-    cursor: pointer;
-    background: transparent;
+.clickable{
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.92rem;
+  margin-bottom: 10px;
+  display: inline-block;
+  transition: opacity 0.12s ease, transform 0.12s ease, text-decoration-color 0.12s ease;
 }
-.tags{
-  font-size: 0.8rem;
+.clickable:hover{
+  text-decoration: underline;
+  opacity: 0.95;
+}
+.clickable:active{
+  transform: translateY(1px);
+}
+
+.thread-info .login,
+.thread-info .creator{
+  font-size: 0.82rem;
   color: var(--text-secondary);
-  margin-top: 4px;
 }
+
+.btnback{
+  margin-bottom: 16px;
+  padding: 8px 14px;
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 12px;
+  transition: background-color 0.12s ease, transform 0.1s ease;
+}
+.btnback:hover{
+  background: var(--bg-soft);
+}
+.btnback:active{
+  transform: translateY(1px);
+}
+
+.tags{
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  line-height: 1.25;
+}
+
 .page{
   max-width: 1300px;
   margin: 0 auto;
-  padding: 18px 16px;
-
+  padding: 20px 16px;
   display: grid;
   grid-template-columns: 360px 1fr; 
   gap: 28px;
@@ -339,12 +372,51 @@ watch(
   .page{
     grid-template-columns: 1fr;
     gap: 16px;
+    padding: 16px 12px;
   }
 }
 
 .back-nav,
 .btn-wide.warn{
   grid-column: 1 / -1;
+}
+
+.back-nav{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-soft);
+  margin-bottom: 8px;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.12);
+}
+
+.back-nav > div{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.back-nav > div:nth-child(3){
+  font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.2;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.back-nav > div:nth-child(4){
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .thread-container,
@@ -354,14 +426,17 @@ watch(
   padding: 0;
   min-height: unset;
 }
+
 input, textarea {
   width: 100%;
   background: var(--bg-soft);
   border: 1px solid var(--border);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--text);
   font-size: 0.95rem;
+  line-height: 1.2;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.08s ease;
 }
 
 textarea {
@@ -369,56 +444,100 @@ textarea {
   resize: vertical;
 }
 
+input::placeholder,
+textarea::placeholder{
+  color: color-mix(in srgb, var(--text-secondary) 85%, transparent);
+}
+
 input:focus, textarea:focus {
   outline: none;
-  border-color: #444;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.18);
+}
+
+input:active, textarea:active{
+  transform: translateY(0.5px);
 }
 
 .child-item{
   background: var(--bg-soft);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 12px;
-  margin-bottom: 10px;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.10);
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.child-item:hover{
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--border) 60%, var(--accent));
+  box-shadow: 0 14px 34px rgba(0,0,0,0.14);
+}
+
+.child-info{
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.child-info .title{
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.child-info .creator{
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.child-actions{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .pagination{
-  margin-top: 12px;
-  padding-top: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: center;
   gap: 10px;
 }
 
-.thread-container > .btn.accent,
-.posts-container > .btn.accent{
-  width: 100%;
-  margin-top: 10px;
-}
 .btn {
-  padding: 7px 14px;
+  padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   cursor: pointer;
   white-space: nowrap;
-  transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease,
-    transform 0.1s ease;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.1s ease, box-shadow 0.12s ease;
 }
 
 .btn:hover {
   background: var(--bg-soft);
-  border-color: #3a3a3a;
+  border-color: color-mix(in srgb, var(--border) 55%, var(--accent));
+  box-shadow: 0 10px 22px rgba(0,0,0,0.14);
+  transform: translateY(-0.5px);
 }
 
 .btn:active {
   transform: translateY(1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.10);
 }
 
 .btn:focus-visible {
@@ -430,11 +549,12 @@ input:focus, textarea:focus {
   background: var(--accent);
   color: #000;
   border-color: transparent;
-  font-weight: 700;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
 }
 
 .btn.accent:hover {
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 .btn.delete,
@@ -442,6 +562,7 @@ input:focus, textarea:focus {
   background: transparent;
   border-color: #4a1a1a;
   color: #ffb3b3;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.10);
 }
 
 .btn.delete:hover,
@@ -453,8 +574,44 @@ input:focus, textarea:focus {
 .btn-wide {
   width: 100%;
   margin: 10px 0 0;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-weight: 700;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-weight: 800;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.12);
+}
+
+.thread-container > .btn.accent,
+.posts-container > .btn.accent{
+  width: 100%;
+  margin-top: 10px;
+}
+
+.reply-box{
+  grid-column: 1 / -1;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 16px;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.14);
+}
+
+.reply-form{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.thread-container{
+  grid-column: 1;
+}
+
+.posts-container{
+  grid-column: 2;
+}
+
+@media (max-width: 900px){
+  .thread-container,
+  .posts-container{
+    grid-column: 1;
+  }
 }
 </style>

@@ -80,6 +80,7 @@ async function reply(){
             replyTitle.value = ''
             replyContent.value = ''
             postTags.value = ''
+            router.push(`/thread/postDetails/${post.value._id}`)
         }).catch((err)=>{
         console.log(err)
     })
@@ -176,22 +177,57 @@ watch(
 )
 </script>
 <template>
-  <button class="btn" @click="goToThread(threadId)">Go back</button>
-  <div class="thread-wrapper" v-if="!thread.isHidden">
+  <div class="post-page">
+    <div class="topbar">
+      <button class="btn" @click="goToThread(threadId)">Go back</button>
+    </div>
+
+    <div class="thread-wrapper" v-if="!thread.isHidden">
       <div class="thread-info" v-if="!isEditing">
-        <div class="login">Author: {{ post.creatorLogin }}</div>
-        <strong>{{ post.title }}</strong><br></br>
-        <p class="likes"><strong>Likes:</strong> {{ likes }}</p>
-        <p class="likes"><strong>Dislikes:</strong> {{ disLikes }}</p>
-        <HighlightedText v-if="post.content" :text="post.content" class="post-content" />
-        <div class="tags">Tags: {{ post.tags }}</div>
-        <div class="post-buttons">
-          <button class="btn accent" @click="like()">Like</button>
-          <button class="btn accent" @click="disLike()">Dislike</button>
-          <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && !isReplying && !blockedUsersId.includes(me._id)" @click="isReplying = true">Reply</button>
-          <button class="btn" v-if="!me.isBlockedEverywhere && post.creatorId === me._id && !thread.isClosed && !blockedUsersId.includes(me._id)" @click="setEditing()">Edit</button>
+        <div class="post-header">
+          <div class="post-meta">
+            <div v-if="post.refersToPost" @click="goToPost(post.refersToPost)" class="clickable">
+              This post references another one! See more...
+            </div>
+            <div class="login">Author: {{ post.creatorLogin }}</div>
+          </div>
+
+          <div class="post-title">
+            <div class="title-text">{{ post.title }}</div>
+          </div>
+        </div>
+
+        <div class="post-stats">
+          <p class="likes"><strong>Likes:</strong> {{ likes }}</p>
+          <p class="likes"><strong>Dislikes:</strong> {{ disLikes }}</p>
+        </div>
+
+        <div class="post-body">
+          <HighlightedText v-if="post.content" :text="post.content" class="post-content" />
+        </div>
+
+        <div class="post-footer">
+          <div class="tags">Tags: {{ post.tags }}</div>
+
+          <div class="post-buttons">
+            <button class="btn accent" @click="like()">Like</button>
+            <button class="btn accent" @click="disLike()">Dislike</button>
+            <button class="btn"
+              v-if="!thread.isClosed && !me.isBlockedEverywhere && !isReplying && !blockedUsersId.includes(me._id)"
+              @click="isReplying = true"
+            >
+              Reply
+            </button>
+            <button class="btn"
+              v-if="!me.isBlockedEverywhere && post.creatorId === me._id && !thread.isClosed && !blockedUsersId.includes(me._id)"
+              @click="setEditing()"
+            >
+              Edit
+            </button>
+          </div>
         </div>
       </div>
+
       <div v-if="isEditing && post.creatorId === me._id && !me.isBlockedEverywhere" class="edit-box">
         <form @submit="editPost(thread._id,post._id)" class="edit-form">
           <div class="edit-group">
@@ -206,226 +242,300 @@ watch(
           <button class="btn accent" type="submit">Submit editing</button>
         </form>
       </div>
+
       <div v-if="isReplying && !me.isBlockedEverywhere" class="replying">
-              <div>
-                <form @submit="reply()" class="edit-form">
-                  <div class="edit-group">
-                    <input v-model="replyTitle" placeholder="..." />
-                    <textarea v-model="replyContent" placeholder="..."></textarea>
-                    <input v-model="postTags" placeholder="Add tags" />
-                  </div>
-                  <button class="btn accent" type="submit">Send reply</button>
-                </form>
-              </div>
+        <div class="edit-box">
+          <form @submit="reply()" class="edit-form">
+            <div class="edit-group">
+              <input v-model="replyTitle" placeholder="..." />
+              <textarea v-model="replyContent" placeholder="..."></textarea>
+              <input v-model="postTags" placeholder="Add tags" />
             </div>
-        <div>
-          <div class="replies-container">        
-            <div v-for="post2 in posts" :key="post2._id" class="reply-item">
-              <div class="reply-info">
-                <div class="creator">Author: {{ post2.creatorLogin }}</div>
-                <div class="title">{{ post2.title }}</div>
-                <div class="content">
-                  <div v-if="post2.content.length<30">{{ post2.content }}</div>
-                  <div v-else>{{ post2.content.slice(0,25) + '...' }}</div>
-                </div>
-              </div>
-              <div class="reply-actions">
-                <button class="btn" @click="goToPost(post2._id)">See more</button>
-                <button v-if="!me.isBlockedEverywhere && (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id)) || me.isAdmin)" class="btn delete" @click="hide(post2._id)">Delete</button>
-              </div>
-            </div>
-          </div>
+            <button class="btn accent" type="submit">Send reply</button>
+          </form>
         </div>
-        <div class="pagination">
-          <button class="btn" v-if="lastPostsPage > 1" @click="prevPostsPage()">Previous page</button>
-          <button class="btn" v-if="posts.length >= 20" @click="nextPostsPage()">Next page</button>
-        </div>
+      </div>
+
+      <div class="pagination">
+        <button class="btn" v-if="lastPostsPage > 1" @click="prevPostsPage()">Previous page</button>
+        <button class="btn" v-if="posts.length >= 20" @click="nextPostsPage()">Next page</button>
+      </div>
+    </div>
+
+    <AdminChat />
   </div>
-  <AdminChat />
 </template>
+
 <style scoped>
-.btn{
-    margin-bottom: 16px;
-    padding: 8px 14px;
-    color: var(--text);
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
-.replies-container{
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 28px;
-  align-items: start;
-  padding: 0 16px;
-  column-gap: 32px;
-  row-gap: 22px;
-  margin-top: 18px;
+.post-page{
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 18px 12px 40px;
 }
 
-.reply-item{
-  width: 100%;
-  padding: 12px 14px; 
-  border: 1px solid rgba(255,255,255,0.12); 
-  border-radius: 12px; 
-  background: rgba(255,255,255,0.04);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+.topbar{
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 14px;
 }
 
-.reply-info{
-  display: grid;
+.thread-wrapper{
+  margin: 0 auto;
+}
+
+.thread-info{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px 20px;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.14);
+}
+
+.post-header{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.post-meta{
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   min-width: 0;
 }
 
-.reply-info .title{
-  font-weight: 600;
+.clickable{
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.92rem;
+  display: inline-block;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.clickable:hover{
+  text-decoration: underline;
+  opacity: 0.95;
+}
+.clickable:active{
+  transform: translateY(1px);
+}
+
+.login{
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.post-title{
+  min-width: 0;
+  text-align: right;
+}
+
+.title-text{
+  font-weight: 800;
+  font-size: 1.12rem;
+  line-height: 1.2;
+  color: var(--text);
+  max-width: 520px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.reply-info .creator{
-  opacity: 0.75;
-  font-size: 0.9rem;
-}
-
-.reply-actions{
-  display: grid;
-  grid-auto-flow: column;
-  gap: 8px;
-  justify-content: end;
-}
-
-.login{
-  font-size: 0.6rem;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-.tags{
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-}
-.thread-container{
-  display: grid;
-  grid-template-columns: 360px 1fr; 
-  gap: 28px;
-  align-items: start;
-  background: transparent;
-  border: none;
-  padding: 0;
-  min-height: unset;
-}
-.thread-wrapper{
-  max-width: 900px;
-  margin: 0 auto;
-}
-.thread-info {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  width:100%;
-  max-width: none;
-  margin: 0 auto;
-}
-
-.likes {
-  display: inline-block;
-  margin-right: 14px;
-  color: var(--text-soft);
-  font-size: 0.9rem;
-}
-
-.likes strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.post-content {
-  margin: 18px 0 22px;
-  line-height: 1.6;
-  color: var(--text);
-  font-size: 0.95rem;
-}
-
-.post-buttons {
+.post-stats{
   display: flex;
-  gap: 10px;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 10px 0 6px;
+}
+
+.likes{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-soft);
+}
+.likes strong{
+  color: var(--text);
+  font-weight: 800;
+}
+
+.post-body{
+  margin-top: 10px;
+}
+
+.post-content{
+  margin: 10px 0 0;
+  line-height: 1.7;
+  color: var(--text);
+  font-size: 0.97rem;
+}
+
+.post-footer{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
   flex-wrap: wrap;
 }
 
-.btn {
+.tags{
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.25;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-buttons{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn{
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: #202020;
+  background: transparent;
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, opacity 0.15s ease;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.1s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+.btn:hover{
+  background: var(--bg-soft);
+  border-color: color-mix(in srgb, var(--border) 55%, var(--accent));
+  box-shadow: 0 10px 22px rgba(0,0,0,0.14);
+  transform: translateY(-0.5px);
+}
+.btn:active{
+  transform: translateY(1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+}
+.btn:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
-.btn:hover {
-  background-color: #2a2a2a;
-}
-
-.btn.accent {
+.btn.accent{
   background: var(--accent);
   color: #000;
   border-color: transparent;
-  font-weight: 600;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+.btn.accent:hover{
+  opacity: 0.92;
 }
 
-.btn.accent:hover {
-  opacity: 0.85;
-}
-
-.edit-box {
+.edit-box{
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  max-width: 900px;
-  margin: 20px auto 0;
+  border-radius: 20px;
+  padding: 20px 18px;
+  margin: 16px auto 0;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.14);
 }
 
-.edit-form {
+.edit-form{
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
-.edit-group {
+.edit-group{
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.edit-group strong {
-  font-size: 0.85rem;
+.edit-group strong{
+  font-size: 0.86rem;
   color: var(--text-soft);
+  font-weight: 800;
 }
 
 input,
-textarea {
+textarea{
+  width: 100%;
   padding: 12px;
   background: var(--bg-soft);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--text);
   font-size: 0.95rem;
+  line-height: 1.2;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.08s ease;
 }
-
-textarea {
+textarea{
   min-height: 140px;
   resize: vertical;
 }
-
-input:focus,
-textarea:focus {
-  outline: none;
-  border-color: #555;
+input::placeholder,
+textarea::placeholder{
+  color: color-mix(in srgb, var(--text-secondary) 85%, transparent);
 }
+input:focus,
+textarea:focus{
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.18);
+}
+input:active,
+textarea:active{
+  transform: translateY(0.5px);
+}
+
+.replying{
+  margin-top: 14px;
+}
+
+.pagination{
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+@media (max-width: 700px){
+  .post-header{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .post-title{
+    text-align: left;
+    width: 100%;
+  }
+  .title-text{
+    max-width: 100%;
+    white-space: normal;
+  }
+  .tags{
+    max-width: 100%;
+  }
+  .post-buttons{
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
 
 </style>
