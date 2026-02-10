@@ -241,6 +241,10 @@ watch(
     </div>
     <div class="thread-container">
       <button class="btn" v-if="!thread.isClosed && !me.isBlockedEverywhere && (me.isAdmin || thread?.creatorId?.toString?.() === me?._id?.toString?.() || (!blockedUsersId.includes(me._id) && ((thread.rootModId || []).includes(me._id) || (thread.modsThreadId || []).includes(me._id))))" @click="isAddingThread = !isAddingThread">Add new subthread</button>
+      <div class="pagination">
+        <button class="btn" v-if="lastThreadPage !== 1" @click="prevThreadPage()">Previous page</button>
+        <button class="btn" v-if="tdamount >= 10" @click="nextThreadPage()">Next page</button>
+      </div>
       <div v-for="thread2 in threads" :key="thread2._id" class="child-item">
         <div class="child-info">
           <div class="title">{{ thread2.title }}</div>
@@ -250,10 +254,6 @@ watch(
           <button class="btn" @click="goToThread(thread2._id)">See more</button>
           <button class="btn" v-if="me.isAdmin" @click="hide(thread2._id)">Hide thread</button>
         </div>
-      <div class="pagination">
-        <button class="btn" v-if="lastThreadPage !== 1" @click="prevThreadPage()">Previous page</button>
-        <button class="btn" v-if="tdamount >= 10" @click="nextThreadPage()">Next page</button>
-      </div>
       <button
         v-if="thread.isClosed && (me.isAdmin || (thread.rootModId || []).includes(me._id)) && !isEditing"
         class="btn-wide"
