@@ -16,24 +16,24 @@ const login = ref('')
 const ifSearched = ref(false)
 const me = ref({})
 async function blockEverywhere(id){
-  const fetch = axios.post(`https://localhost/api/users/admin/blockEverywhere/${id}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`/api/users/admin/blockEverywhere/${id}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
 async function unblockEverywhere(id){
-  const fetch = axios.post(`https://localhost/api/users/admin/unblockEverywhere/${id}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`/api/users/admin/unblockEverywhere/${id}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
 async function getMyData(){
-    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)
     })
 }
 async function getUsers(){
-    const fetch = axios.get(`https://localhost/api/users/${userPage.value}/${40}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`/api/users/${userPage.value}/${40}`,{withCredentials:true}).then((res)=>{
         users.value = res.data.users
         usersToShow.value = res.data.users.filter((x) => x.isAcceptedByAdmin === true)
         admins.value = res.data.users.filter((x) => x.isAdmin === true)
@@ -43,7 +43,7 @@ async function getUsers(){
     })
 }
 async function getUser(){
-    const fetch = axios.get(`https://localhost/api/users/find/${login.value}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`/api/users/find/${login.value}`,{withCredentials:true}).then((res)=>{
       foundUser.value = res.data.user || null
       ifSearched.value = true
     }).catch((err)=>{
@@ -51,30 +51,30 @@ async function getUser(){
     })
 }
 async function deleteUser(id){
-    const fetch = axios.delete(`https://localhost/api/users/${id}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.delete(`/api/users/${id}`,{withCredentials:true}).then((res)=>{
         getUsers()
     }).catch((err)=>{
             console.log(err)
     })
 }
 async function getUsersToBeAccepted(){
-    const fetch = axios.get(`https://localhost/api/users/toBeAccepted`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`/api/users/toBeAccepted`,{withCredentials:true}).then((res)=>{
         usersToBeAccepted.value = res.data.users}).catch((err)=>{
             console.log(err)
     })
 }
 async function acceptUser(id){
-    const fetch = axios.post(`https://localhost/api/users/toBeAccepted/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/users/toBeAccepted/${id}`,{},{withCredentials:true}).catch((err)=>{
             console.log(err)
     })
 }
 async function dontAcceptUser(id){
-    const fetch = axios.post(`https://localhost/api/users/notToBeAccepted/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/users/notToBeAccepted/${id}`,{},{withCredentials:true}).catch((err)=>{
             console.log(err)
     })
 }
 async function giveAdmin(id){
-    const fetch = axios.post(`https://localhost/api/users/giveAdmin/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/users/giveAdmin/${id}`,{},{withCredentials:true}).catch((err)=>{
       console.log(err)
     })
 }

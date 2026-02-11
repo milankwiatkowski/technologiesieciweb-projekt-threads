@@ -13,7 +13,7 @@ function pushMsg(info){
   isHidden.value = false
 }
 async function getMyData(){
-    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)

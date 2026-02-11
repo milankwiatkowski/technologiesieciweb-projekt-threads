@@ -28,7 +28,7 @@ const currentRoomId = ref(null)
 const newTitle = ref('')
 const isEditingTitle = ref(false)
 async function getThreads(page){
-    const fetch = axios.get(`https://localhost/api/threads/sub/${threadId.value}/${page}/${10}`,{withCredentials:true}
+    const fetch = axios.get(`/api/threads/sub/${threadId.value}/${page}/${10}`,{withCredentials:true}
     ).then((res)=>{
         threads.value = res.data.threads
         thread.value = res.data.thread
@@ -39,7 +39,7 @@ async function getThreads(page){
     })
 }
 async function getPosts(page){
-    const fetch = axios.get(`https://localhost/api/threads/${threadId.value}/posts/${page}/${10}`,{withCredentials:true}
+    const fetch = axios.get(`/api/threads/${threadId.value}/posts/${page}/${10}`,{withCredentials:true}
     ).then((res)=>{
         posts.value = res.data.posts
         postsAmount.value = res.data.posts.length
@@ -48,14 +48,14 @@ async function getPosts(page){
     })
 }
 async function addThread(){
-    const fetch = axios.post(`https://localhost/api/threads/subthread/${threadId.value}`,{
+    const fetch = axios.post(`/api/threads/subthread/${threadId.value}`,{
         title: title.value,tags:tags.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function addPost(){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/post`,{
+    const fetch = axios.post(`/api/threads/${threadId.value}/post`,{
         title: title.value, tags: tagsPost.value, content: content.value},
         {withCredentials:true}).catch((err)=>{
         console.log(err)
@@ -103,32 +103,32 @@ async function prevPostPage(){
 }
 
 async function getMyData(){
-    const fetch = axios.get('https://localhost/api/auth/me',{withCredentials:true}).then((res)=>{
+    const fetch = axios.get('/api/auth/me',{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
         console.log(err)
     })
 }
 async function close(){
-    const fetch = axios.post(`https://localhost/api/threads/close/${threadId.value}`,{},{withCredentials:true}).then(()=>{
+    const fetch = axios.post(`/api/threads/close/${threadId.value}`,{},{withCredentials:true}).then(()=>{
         getThreads(lastThreadPage.value)
     }).catch((err)=>{
         console.log(err)
     })
 }
 async function hide(id){
-  const fetch = axios.post(`https://localhost/api/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`/api/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
 async function hidePost(id){
-  const fetch = axios.post(`https://localhost/api/threads/post/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`/api/threads/post/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
 
 async function addTags(){
-  await axios.post(`https://localhost/api/threads/edit/addTags/${threadId.value}`,{tags: newTags.value},{withCredentials:true}).then(()=>{
+  await axios.post(`/api/threads/edit/addTags/${threadId.value}`,{tags: newTags.value},{withCredentials:true}).then(()=>{
     newTags.value = ''
     isEditingTitle.value = false
   }).catch((err)=>{
@@ -137,7 +137,7 @@ async function addTags(){
 }
 
 async function changeTitle(){
-  await axios.post(`https://localhost/api/threads/edit/changeTitle/${threadId.value}`,{title: newTitle.value},{withCredentials:true}).then(()=>{
+  await axios.post(`/api/threads/edit/changeTitle/${threadId.value}`,{title: newTitle.value},{withCredentials:true}).then(()=>{
     newTitle.value = ''
     isEditing.value = false
   }).catch((err)=>{

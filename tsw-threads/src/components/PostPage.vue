@@ -27,12 +27,12 @@ const blockedUsersId = ref([])
 const postTags = ref('')
 const threadId = computed(() => post.value.parentThreadId)
 async function like(){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/${postId.value}/likes`,{like:'like'},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/threads/${threadId.value}/${postId.value}/likes`,{like:'like'},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function disLike(){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/${postId.value}/likes`,{like:'dislike'},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/threads/${threadId.value}/${postId.value}/likes`,{like:'dislike'},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
@@ -43,7 +43,7 @@ async function goToThread(id){
     router.push(`/thread/${id}`)
 }
 async function editPost(){
-    const fetch = axios.post(`https://localhost/api/threads/edit/${threadId.value}/${postId.value}`,{
+    const fetch = axios.post(`/api/threads/edit/${threadId.value}/${postId.value}`,{
         title: title.value,
         content: content.value},
         {withCredentials:true}).then(()=>{
@@ -53,14 +53,14 @@ async function editPost(){
     })
 }
 async function getMyData(){
-    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)
     })
 }
 async function getPostDetails(id){
-    const fetch = axios.get(`https://localhost/api/threads/posts/postDetails/${id}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`/api/threads/posts/postDetails/${id}`,{withCredentials:true}).then((res)=>{
         post.value = res.data.post
         likes.value = res.data.post.userLikesId.length
         disLikes.value = res.data.post.userDislikesId.length
@@ -72,7 +72,7 @@ async function getPostDetails(id){
 }
 async function reply(){
     isReplying.value = false
-    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/reply/${postId.value}`,{
+    const fetch = axios.post(`/api/threads/${threadId.value}/reply/${postId.value}`,{
         title: replyTitle.value,
         tags: postTags.value,
         content: replyContent.value},
@@ -86,7 +86,7 @@ async function reply(){
     })
 }
 async function getThreadDetails(threadId){
-    const fetch = axios.get(`https://localhost/api/threads/subthread/${threadId}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`/api/threads/subthread/${threadId}`,{withCredentials:true}).then((res)=>{
         thread.value = res.data.thread
         blockedUsersId.value = thread.value.blockedId
     }).catch((err)=>{
@@ -108,7 +108,7 @@ function onHidden(post){
   posts.value = posts.value.filter(x => x._id !== post._id)
 }
 async function hide(id){
-  const fetch = axios.post(`https://localhost/api/threads/post/hide/${id}`,{postId:postId.value},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`/api/threads/post/hide/${id}`,{postId:postId.value},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
@@ -126,7 +126,7 @@ async function prevPostsPage(){
     }
 }
 async function getPosts(page){
-    const fetch = axios.get(`https://localhost/api/threads/${threadId.value}/replies/${postId.value}/${page}/${20}`,{withCredentials:true}
+    const fetch = axios.get(`/api/threads/${threadId.value}/replies/${postId.value}/${page}/${20}`,{withCredentials:true}
     ).then((res)=>{
         posts.value = res.data.replies
         postsAmount.value = res.data.replies.length

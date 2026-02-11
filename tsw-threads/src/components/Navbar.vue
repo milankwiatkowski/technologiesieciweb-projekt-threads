@@ -14,14 +14,14 @@ function goToRootPage(){
   router.push('/threads')
 }
 function getMyData(){
-    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
         console.log(err)
     })
 }
 function logout(){
-    const fetch = axios.post("https://localhost/api/auth/logout").then(()=>{
+    const fetch = axios.post("/api/auth/logout").then(()=>{
         socket.removeAllListeners()
         socket.disconnect()
         router.push("/")
@@ -30,7 +30,7 @@ function logout(){
     })
 }
 function search(){
-  const fetch = axios.get(`https://localhost/api/threads/find/${tag.value}/1/4`,{withCredentials:true}).then(()=>{
+  const fetch = axios.get(`/api/threads/find/${tag.value}/1/4`,{withCredentials:true}).then(()=>{
     router.push(`/searched/${tag.value}`)
   }).catch((err)=>{
     console.log(err)

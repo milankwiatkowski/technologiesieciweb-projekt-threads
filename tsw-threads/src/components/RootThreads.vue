@@ -18,7 +18,7 @@ async function goToRootModpanel(){
     router.push(`/rootModpanel`)
 }
 async function getMyData(){
-    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)
@@ -26,7 +26,7 @@ async function getMyData(){
 }
 
 async function getThreads(page){
-    const fetch = axios.get(`https://localhost/api/threads/root/${page}/${10}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`/api/threads/root/${page}/${10}`,{withCredentials:true}).then((res)=>{
         threads.value = res.data.threads
         tdamount.value = res.data.threads.length
     }).catch((err)=>{
@@ -46,7 +46,7 @@ async function getThreadDetails(id){
 // }
 
 async function addThread(){
-    const fetch = axios.post('https://localhost/api/threads/root/',{
+    const fetch = axios.post('/api/threads/root/',{
         title: title.value,
         tags: tags.value},
         {withCredentials:true}).catch((err)=>{
@@ -69,7 +69,7 @@ async function prevPage(){
 }
 
 async function hide(id){
-  const fetch = axios.post(`https://localhost/api/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`/api/threads/hide/${id}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
@@ -146,7 +146,7 @@ watch(lastPage, (newPage)=>{
         <button v-if="tdamount >= 10" @click="nextPage()">Next page</button>
       </div>
 
-      <div v-if="!me.isBlockedEverywhere && (me.isAdmin || me.isRootMod)" class="form-wrapper">
+      <div v-if="!me.isBlockedEverywhere" class="form-wrapper">
         <form @submit.prevent="addThread">
           <input v-model="title" placeholder="Add title" required />
           <input v-model="tags" placeholder="Add tags" required />

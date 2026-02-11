@@ -18,7 +18,7 @@ const myId       = computed(() => String(me.value._id || ""))
 const blockedIds = computed(() => (blockedUsersId.value || []).map(String))
 
 async function getMyData(){
-    const fetch = axios.get('https://localhost/api/auth/me',{withCredentials:true}).then((res)=>[
+    const fetch = axios.get('/api/auth/me',{withCredentials:true}).then((res)=>[
         me.value = res.data.user,
     ]).catch((err)=>{
         console.log(err)
@@ -26,7 +26,7 @@ async function getMyData(){
 }
 
 async function getThread(){
-    const fetch = axios.get(`https://localhost/api/threads/sub/${threadId.value}/${1}/${10}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`/api/threads/sub/${threadId.value}/${1}/${10}`,{withCredentials:true}).then((res)=>{
         thread.value = res.data.thread
         blockedUsersId.value = res.data.thread.blockedId
 
@@ -36,22 +36,22 @@ async function getThread(){
 }
 
 async function blockUser(id){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/block/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/threads/${threadId.value}/block/${id}`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function unblockUser(id){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/unblock/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/threads/${threadId.value}/unblock/${id}`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function giveMod(id){
-    const fetch = axios.post(`https://localhost/api/threads/${threadId.value}/givemod/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/threads/${threadId.value}/givemod/${id}`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function takeMod(id){
-    const fetch = axios.delete(`https://localhost/api/threads/${threadId.value}/givemod/${id}`,{withCredentials:true}).catch((err)=>{
+    const fetch = axios.delete(`/api/threads/${threadId.value}/givemod/${id}`,{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }

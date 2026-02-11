@@ -147,7 +147,7 @@ router.post('/root',async(req,res)=>{
         console.log(`INFO User ${req.user.login} is trying to post a root thread ${getTime()}`)
         const rootMods = await User.find({isRootMod:true}).distinct('_id')
         const user = await User.findById(req.user.id)
-        if(user && user.isAcceptedByAdmin && !user.isBlockedEverywhere && (user.isAdmin || user.isRootMod)){
+        if(user && user.isAcceptedByAdmin && !user.isBlockedEverywhere){
             const tags = req.body.tags.split(' ').map(x => x.toLowerCase()).filter(x => x.length>0).slice(0,20)
             const newThread = new Thread({
                 title:req.body.title,

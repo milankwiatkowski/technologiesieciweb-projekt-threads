@@ -12,14 +12,14 @@ const password = ref('')
 const repeatedPassword = ref('')
 
 function getMyData(){
-    const fetch = axios.get("https://localhost/api/auth/me",{withCredentials:true}).then((res)=>{
+    const fetch = axios.get("/api/auth/me",{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
             console.log(err)
     })
 }
 function patchPassword(){
-    axios.post(`https://localhost/api/users/patch/${me.value._id}`,{password:password.value,repeatedPassword:repeatedPassword.value},{withCredentials:true}).then(()=>{
+    axios.post(`/api/users/patch/${me.value._id}`,{password:password.value,repeatedPassword:repeatedPassword.value},{withCredentials:true}).then(()=>{
       alert("Password changed successfully")
     }).catch((err)=>{
         alert(err.response.data.message)

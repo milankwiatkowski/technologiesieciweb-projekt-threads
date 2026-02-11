@@ -14,7 +14,7 @@ const lastPage = ref(Number(localStorage.getItem("lastHiddenPage")) || 1)
 
 
 async function getPosts(){
-    const fetch = axios.get(`https://localhost/api/threads/hidden/posts/${lastPage.value}/${30}`,{withCredentials:true}
+    const fetch = axios.get(`/api/threads/hidden/posts/${lastPage.value}/${30}`,{withCredentials:true}
     ).then((res)=>{
         posts.value = res.data.posts
     }).catch((err)=>{
@@ -37,7 +37,7 @@ async function prevPage(){
 }
 
 async function getMyData(){
-    const fetch = axios.get('https://localhost/api/auth/me',{withCredentials:true}).then((res)=>{
+    const fetch = axios.get('/api/auth/me',{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
         console.log(err)

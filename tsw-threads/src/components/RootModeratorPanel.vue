@@ -14,24 +14,24 @@ const usersToShow = ref([])
 const admins = ref([])
 const users = ref([])
 async function giveMod(id){
-    const fetch = axios.post(`https://localhost/api/threads/root/givemod/${id}`,{},{withCredentials:true}).catch((err)=>{
+    const fetch = axios.post(`/api/threads/root/givemod/${id}`,{},{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function takeMod(id){
-    const fetch = axios.delete(`https://localhost/api/threads/root/givemod/${id}`,{withCredentials:true}).catch((err)=>{
+    const fetch = axios.delete(`/api/threads/root/givemod/${id}`,{withCredentials:true}).catch((err)=>{
         console.log(err)
     })
 }
 async function getMyData(){
-    const fetch = axios.get('https://localhost/api/auth/me',{withCredentials:true}).then((res)=>[
+    const fetch = axios.get('/api/auth/me',{withCredentials:true}).then((res)=>[
         me.value = res.data.user,
     ]).catch((err)=>{
         console.log(err)
     })
 }
 async function getUsers(){
-    const fetch = axios.get(`https://localhost/api/users/${1}/${50}`,{withCredentials:true}).then((res)=>{
+    const fetch = axios.get(`/api/users/${1}/${50}`,{withCredentials:true}).then((res)=>{
         users.value = res.data.users
         usersToShow.value = res.data.users.filter((x) => x.isAcceptedByAdmin === true)
         admins.value = res.data.users.filter((x) => x.isAdmin === true)

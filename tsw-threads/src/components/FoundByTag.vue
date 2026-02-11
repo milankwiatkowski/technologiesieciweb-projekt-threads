@@ -14,7 +14,7 @@ const lastPage = ref(Number(localStorage.getItem("lastTagPage")) || 1)
 
 
 async function getPosts(){
-    const fetch = axios.get(`https://localhost/api/threads/find/${tag.value}/${lastPage.value}/${30}`,{withCredentials:true}
+    const fetch = axios.get(`/api/threads/find/${tag.value}/${lastPage.value}/${30}`,{withCredentials:true}
     ).then((res)=>{
         posts.value = res.data.posts
     }).catch((err)=>{
@@ -23,7 +23,7 @@ async function getPosts(){
 }
 
 async function hidePost(pid){
-  const fetch = axios.post(`https://localhost/api/threads/post/hide/${pid}`,{},{withCredentials:true}).catch((err)=>{
+  const fetch = axios.post(`/api/threads/post/hide/${pid}`,{},{withCredentials:true}).catch((err)=>{
     console.log(err)
   })
 }
@@ -47,7 +47,7 @@ async function prevPage(){
 }
 
 async function getMyData(){
-    const fetch = axios.get('https://localhost/api/auth/me',{withCredentials:true}).then((res)=>{
+    const fetch = axios.get('/api/auth/me',{withCredentials:true}).then((res)=>{
         me.value = res.data.user
     }).catch((err)=>{
         console.log(err)
